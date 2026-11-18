@@ -17,6 +17,9 @@ impl MailApp {
     /// What the file holds, and where its copy goes, are shown before it's imported. Looked at
     /// afresh each time it's picked: the room freed, or the file changed, since.
     pub(super) fn open_mail_file(&mut self) {
+        if self.services.pick_later(&Picked::DataFile) {
+            return;
+        }
         if let Some(path) = self.services.pick_mail_file() {
             self.open_handed(&path.to_string_lossy());
         }
