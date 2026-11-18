@@ -164,7 +164,7 @@ impl MailApp {
     }
 
     pub(super) fn open_attachment(&mut self, i: usize) {
-        if self.services.downloads() {
+        if self.services.downloads() && !self.services.opens_files_after_saving() {
             self.download_attachment(i);
             return;
         }
@@ -267,7 +267,7 @@ impl MailApp {
             }
             return;
         }
-        if self.services.downloads() {
+        if self.services.downloads() && !self.services.opens_files_after_saving() {
             match self.session.note_file(uid, index) {
                 Ok((name, b)) => self.services.download(&name, &b),
                 Err(e) => self.session.notice(e.to_string(), true),
