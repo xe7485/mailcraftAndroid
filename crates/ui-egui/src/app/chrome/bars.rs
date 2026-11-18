@@ -255,6 +255,9 @@ impl MailApp {
         } else {
             (1.0, 1.0)
         };
+        let notification_settings_notice = tl!("Android notifications are off. Turn them on in Settings for new mail and calendar reminders.");
+        let show_notification_settings = self.services.can_open_notification_settings() && text == notification_settings_notice;
+        let mut open_notification_settings = false;
         if enter < 1.0 || leave < 1.0 {
             ctx.request_repaint();
         } else {
@@ -278,9 +281,17 @@ impl MailApp {
                     .show(ui, |ui| {
                         ui.set_max_width(420.0);
                         // Notices from the engine are English; the ones with a fixed text have a translation.
-                        ui.label(RichText::new(tl!(&text)).color(if error { Color32::WHITE } else { t.surface }));
+                        ui.horizontal_wrapped(|ui| {
+                            ui.label(RichText::new(tl!(&text)).color(if error { Color32::WHITE } else { t.surface }));
+                            if show_notification_settings && ui.button(tl!("Open")).clicked() {
+                                open_notification_settings = true;
+                            }
+                        });
                     });
             });
+        if open_notification_settings {
+            self.act(Action::OpenNotificationSettings);
+        }
     }
 }
 

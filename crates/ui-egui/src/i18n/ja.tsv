@@ -1856,3 +1856,4 @@ count	occurrences	回
 	You can share up to {n} attachments at once	一度に共有できる添付ファイルは最大 {n} 個です
 	The selected attachments are too large to share	選択した添付ファイルが大きすぎて共有できません
 	Notification settings	通知設定
+	Android notifications are off. Turn them on in Settings for new mail and calendar reminders.	Android の通知はオフです。新着メールやカレンダーのリマインダーを受け取るには、設定でオンにしてください。

@@ -1856,3 +1856,4 @@ count	occurrences	次
 	You can share up to {n} attachments at once	一次最多可分享 {n} 个附件
 	The selected attachments are too large to share	所选附件过大，无法分享
 	Notification settings	通知设置
+	Android notifications are off. Turn them on in Settings for new mail and calendar reminders.	Android 通知已关闭。请在设置中开启通知，以接收新邮件提醒和日历提醒。
