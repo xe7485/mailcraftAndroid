@@ -2,8 +2,10 @@
 //! is in a piece of its own: data files, saving and attaching files, what's inserted into a
 //! message, an account's keys.
 
+mod calendar_events;
 mod data_files;
 mod inserting;
+mod people;
 mod saving;
 mod security;
 
@@ -48,6 +50,14 @@ pub enum Action {
         index: usize,
         open: bool,
     },
+    /// Share, export, or add a contact to the platform address book.
+    ShareContact(String),
+    ExportContact(String),
+    AddContactToSystem(String),
+    /// Share, export, or add a calendar event to the platform calendar.
+    ShareCalendarEvent(String),
+    ExportCalendarEvent(String),
+    AddEventToSystemCalendar(String),
     /// Search every folder for this (shown in the box, with the Search tab).
     Search(String),
     SetDark(Option<bool>),
@@ -322,6 +332,12 @@ impl MailApp {
             Action::OpenInCraft(i, cmd) => self.open_in_craft(i, cmd),
             Action::DragOut(v) => self.drag_out(v),
             Action::NoteFile { uid, index, open } => self.note_file(&uid, index, open),
+            Action::ShareContact(uid) => self.share_contact(&uid),
+            Action::ExportContact(uid) => self.export_contact(&uid),
+            Action::AddContactToSystem(uid) => self.add_contact_to_system(&uid),
+            Action::ShareCalendarEvent(uid) => self.share_calendar_event(&uid),
+            Action::ExportCalendarEvent(uid) => self.export_calendar_event(&uid),
+            Action::AddEventToSystemCalendar(uid) => self.add_event_to_system_calendar(&uid),
             // Into the message being written or the signature being edited (`actions/inserting.rs`).
             Action::EditSignature { account, insert } => {
                 self.ui.dialog = Some(Dialog::Signature(Box::new(dialogs::SignatureForm::new(&self.session, &account, insert))));

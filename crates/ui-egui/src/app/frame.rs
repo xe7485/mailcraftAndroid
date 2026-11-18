@@ -592,6 +592,11 @@ impl MailApp {
             if in_window && d.for_compose() {
                 self.ui.dialog = Some(d);
             } else {
+                if let Dialog::Event(form) = &mut d {
+                    form.can_share = self.ui.can_share_calendar_events;
+                    form.can_export = self.ui.can_export_calendar_events;
+                    form.can_add_to_system_calendar = self.ui.can_add_to_system_calendar;
+                }
                 let keep = dialogs::show(&ctx, &mut d, &self.session, &mut self.ui.pictures, &t, &mut acts);
                 if keep && self.ui.dialog.is_none() {
                     self.ui.dialog = Some(d);

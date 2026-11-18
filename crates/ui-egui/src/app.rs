@@ -78,6 +78,12 @@ impl MailApp {
             seen_notices: seen,
             craft_apps,
             can_drag_out: services.can_drag_out(),
+            can_share_contacts: services.can_share_contacts(),
+            can_export_contacts: services.can_export_contacts(),
+            can_add_to_system_contacts: services.can_add_to_system_contacts(),
+            can_share_calendar_events: services.can_share_calendar_events(),
+            can_export_calendar_events: services.can_export_calendar_events(),
+            can_add_to_system_calendar: services.can_add_to_system_calendar(),
             // Until the ribbon and the list are first drawn: every button labelled, a page of ten.
             ribbon_icons_from: usize::MAX,
             list_page: 10,

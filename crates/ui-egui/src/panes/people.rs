@@ -496,6 +496,23 @@ pub fn show(s: &Session, st: &mut UiState, ui: &mut Ui, acts: &mut Vec<Action>) 
                             }
                         }
                     });
+                    if st.can_share_contacts || st.can_export_contacts || st.can_add_to_system_contacts {
+                        let more = widgets::more_pill(ui, "More actions", &t);
+                        egui::Popup::menu(&more).id(more.id.with("contact-actions")).show(|ui| {
+                            if st.can_share_contacts && ui.button(tl!("Share")).clicked() {
+                                acts.push(Action::ShareContact(c.uid.clone()));
+                                ui.close();
+                            }
+                            if st.can_export_contacts && ui.button(tl!("Save As…")).clicked() {
+                                acts.push(Action::ExportContact(c.uid.clone()));
+                                ui.close();
+                            }
+                            if st.can_add_to_system_contacts && ui.button(tl!("Add to contacts…")).clicked() {
+                                acts.push(Action::AddContactToSystem(c.uid.clone()));
+                                ui.close();
+                            }
+                        });
+                    }
                 });
             });
             ui.add_space(18.0);

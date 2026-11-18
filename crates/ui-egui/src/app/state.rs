@@ -266,6 +266,14 @@ pub struct UiState {
     pub(crate) drag_out: Vec<PathBuf>,
     /// The platform can drag files out.
     pub(crate) can_drag_out: bool,
+    /// The platform can share, export or add address-book contacts to its own apps.
+    pub can_share_contacts: bool,
+    pub can_export_contacts: bool,
+    pub can_add_to_system_contacts: bool,
+    /// The platform can share, export or add calendar events to its own apps.
+    pub can_share_calendar_events: bool,
+    pub can_export_calendar_events: bool,
+    pub can_add_to_system_calendar: bool,
     /// The account whose import's details are shown, beside the status bar.
     pub(crate) import_details: Option<String>,
     /// Send / Receive's progress window.

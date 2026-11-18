@@ -124,6 +124,10 @@ pub struct EventForm {
     /// Its online meeting (issue #25): the rooms to add, and what Save asks.
     pub meeting: MeetingState,
     pub error: Option<String>,
+    /// Platform handoff capabilities, filled when the dialog is drawn.
+    pub can_share: bool,
+    pub can_export: bool,
+    pub can_add_to_system_calendar: bool,
 }
 
 fn local_date(t: i64, s: &Session) -> String {
@@ -265,6 +269,9 @@ impl EventForm {
             categories: e.categories.clone(),
             all_categories: all_categories(s, &e.categories),
             error: None,
+            can_share: false,
+            can_export: false,
+            can_add_to_system_calendar: false,
         })
     }
 
@@ -632,6 +639,29 @@ pub fn event(ui: &mut Ui, f: &mut EventForm, t: &Tokens, acts: &mut Vec<Action>)
     footer_rule(ui, t);
     let mut keep = true;
     ui.horizontal(|ui| {
+        if f.uid.is_some() && (f.can_share || f.can_export || f.can_add_to_system_calendar) {
+            let more = widgets::more_pill(ui, "More actions", t);
+            egui::Popup::menu(&more).id(more.id.with("calendar-event-actions")).show(|ui| {
+                if f.can_share && ui.button(tl!("Share")).clicked() {
+                    if let Some(uid) = &f.uid {
+                        acts.push(Action::ShareCalendarEvent(uid.clone()));
+                    }
+                    ui.close();
+                }
+                if f.can_export && ui.button(tl!("Save As…")).clicked() {
+                    if let Some(uid) = &f.uid {
+                        acts.push(Action::ExportCalendarEvent(uid.clone()));
+                    }
+                    ui.close();
+                }
+                if f.can_add_to_system_calendar && ui.button(tl!("Add to calendar…")).clicked() {
+                    if let Some(uid) = &f.uid {
+                        acts.push(Action::AddEventToSystemCalendar(uid.clone()));
+                    }
+                    ui.close();
+                }
+            });
+        }
         if let Some(uid) = f.uid.clone().filter(|_| !f.read_only) {
             if f.recurring {
                 if ui.button(tl!("Delete this occurrence")).clicked() {
