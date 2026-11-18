@@ -84,6 +84,8 @@ impl MailApp {
             can_share_calendar_events: services.can_share_calendar_events(),
             can_export_calendar_events: services.can_export_calendar_events(),
             can_add_to_system_calendar: services.can_add_to_system_calendar(),
+            can_dial_phone: services.can_dial_phone(),
+            can_open_map: services.can_open_map(),
             // Until the ribbon and the list are first drawn: every button labelled, a page of ten.
             ribbon_icons_from: usize::MAX,
             list_page: 10,

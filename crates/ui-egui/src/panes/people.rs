@@ -531,7 +531,21 @@ pub fn show(s: &Session, st: &mut UiState, ui: &mut Ui, acts: &mut Vec<Action>) 
             }
             // Each number with what it is (Outlook's Business, Home, Mobile…).
             for ph in &c.phones {
-                field(ui, &t, Icon::Phone, &ph.value, phone_kind(&ph.kind));
+                if st.can_dial_phone {
+                    ui.horizontal(|ui| {
+                        let (r, _) = ui.allocate_exact_size(vec2(18.0, 18.0), Sense::hover());
+                        icons::paint(ui.painter(), r, Icon::Phone, t.accent);
+                        if ui.link(&ph.value).clicked() {
+                            acts.push(Action::DialPhone(ph.value.clone()));
+                        }
+                        let kind = phone_kind(&ph.kind);
+                        if !kind.is_empty() {
+                            ui.label(RichText::new(kind).color(t.faint).small());
+                        }
+                    });
+                } else {
+                    field(ui, &t, Icon::Phone, &ph.value, phone_kind(&ph.kind));
+                }
             }
             for a in c.addresses.iter().filter(|a| !a.is_empty()) {
                 let kind = match a.kind.as_str() {
@@ -545,7 +559,18 @@ pub fn show(s: &Session, st: &mut UiState, ui: &mut Ui, acts: &mut Vec<Action>) 
                         .filter(|x| !x.trim().is_empty())
                         .collect::<Vec<_>>()
                         .join("\n");
-                field(ui, &t, Icon::Location, &lines, kind);
+                if st.can_open_map {
+                    ui.horizontal(|ui| {
+                        let (r, _) = ui.allocate_exact_size(vec2(18.0, 18.0), Sense::hover());
+                        icons::paint(ui.painter(), r, Icon::Location, t.accent);
+                        if ui.link(&lines).clicked() {
+                            acts.push(Action::OpenMap(lines.clone()));
+                        }
+                        ui.label(RichText::new(kind).color(t.faint).small());
+                    });
+                } else {
+                    field(ui, &t, Icon::Location, &lines, kind);
+                }
             }
             if !c.birthday.is_empty() {
                 field(ui, &t, Icon::Calendar, &birthday_shown(&c.birthday), tl!("Birthday"));

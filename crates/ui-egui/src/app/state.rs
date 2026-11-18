@@ -274,6 +274,9 @@ pub struct UiState {
     pub can_share_calendar_events: bool,
     pub can_export_calendar_events: bool,
     pub can_add_to_system_calendar: bool,
+    /// The platform can hand phone numbers and postal addresses to its own apps.
+    pub can_dial_phone: bool,
+    pub can_open_map: bool,
     /// The account whose import's details are shown, beside the status bar.
     pub(crate) import_details: Option<String>,
     /// Send / Receive's progress window.

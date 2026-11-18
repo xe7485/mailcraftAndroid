@@ -5,6 +5,7 @@
 mod calendar_events;
 mod data_files;
 mod inserting;
+mod links;
 mod people;
 mod saving;
 mod security;
@@ -58,6 +59,9 @@ pub enum Action {
     ShareCalendarEvent(String),
     ExportCalendarEvent(String),
     AddEventToSystemCalendar(String),
+    /// Hand a phone number or postal address to the platform.
+    DialPhone(String),
+    OpenMap(String),
     /// Search every folder for this (shown in the box, with the Search tab).
     Search(String),
     SetDark(Option<bool>),
@@ -338,6 +342,8 @@ impl MailApp {
             Action::ShareCalendarEvent(uid) => self.share_calendar_event(&uid),
             Action::ExportCalendarEvent(uid) => self.export_calendar_event(&uid),
             Action::AddEventToSystemCalendar(uid) => self.add_event_to_system_calendar(&uid),
+            Action::DialPhone(number) => self.dial_phone(&number),
+            Action::OpenMap(address) => self.open_map(&address),
             // Into the message being written or the signature being edited (`actions/inserting.rs`).
             Action::EditSignature { account, insert } => {
                 self.ui.dialog = Some(Dialog::Signature(Box::new(dialogs::SignatureForm::new(&self.session, &account, insert))));
