@@ -1860,3 +1860,4 @@ count	occurrences	повторений
 	The selected attachments are too large to share	Выбранные вложения слишком велики для отправки
 	Notification settings	Настройки уведомлений
 	Android notifications are off. Turn them on in Settings for new mail and calendar reminders.	Уведомления Android отключены. Включите их в настройках, чтобы получать уведомления о новой почте и напоминания календаря.
+	Your mail, on this device. Add an email account: messages stay here for fast search and offline reading. Passwords are encrypted using Android Keystore.	Ваша почта на этом устройстве. Добавьте учётную запись почты: письма останутся здесь для быстрого поиска и чтения без сети. Пароли шифруются с помощью Android Keystore.

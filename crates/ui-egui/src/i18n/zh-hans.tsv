@@ -1857,3 +1857,4 @@ count	occurrences	次
 	The selected attachments are too large to share	所选附件过大，无法分享
 	Notification settings	通知设置
 	Android notifications are off. Turn them on in Settings for new mail and calendar reminders.	Android 通知已关闭。请在设置中开启通知，以接收新邮件提醒和日历提醒。
+	Your mail, on this device. Add an email account: messages stay here for fast search and offline reading. Passwords are encrypted using Android Keystore.	邮件保存在此设备上。添加电子邮件帐户后，邮件会留在这里，方便快速搜索和离线阅读。密码使用 Android Keystore 加密。

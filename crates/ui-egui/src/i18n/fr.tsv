@@ -1861,3 +1861,4 @@ count	occurrences	occurrences
 	The selected attachments are too large to share	Les pièces jointes sélectionnées sont trop volumineuses pour le partage
 	Notification settings	Paramètres des notifications
 	Android notifications are off. Turn them on in Settings for new mail and calendar reminders.	Les notifications Android sont désactivées. Activez-les dans les paramètres pour recevoir les nouveaux courriers et rappels de calendrier.
+	Your mail, on this device. Add an email account: messages stay here for fast search and offline reading. Passwords are encrypted using Android Keystore.	Votre courrier sur cet appareil. Ajoutez un compte de messagerie : les messages restent ici pour une recherche rapide et une lecture hors connexion. Les mots de passe sont chiffrés avec Android Keystore.

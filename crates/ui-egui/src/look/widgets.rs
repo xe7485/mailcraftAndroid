@@ -646,7 +646,7 @@ pub fn shorten(s: &str, max: usize) -> String {
 }
 
 /// First run: no accounts yet.
-pub fn welcome(ui: &mut Ui, t: &Tokens, jmap_only: bool, acts: &mut Vec<Action>) {
+pub fn welcome(ui: &mut Ui, t: &Tokens, jmap_only: bool, is_android: bool, acts: &mut Vec<Action>) {
     ui.vertical_centered(|ui| {
         ui.add_space((ui.available_height() * 0.18).max(20.0));
         let narrow = ui.available_width() < 520.0;
@@ -671,6 +671,8 @@ pub fn welcome(ui: &mut Ui, t: &Tokens, jmap_only: bool, acts: &mut Vec<Action>)
                 ui.add_space(4.0);
                 let about = if jmap_only {
                     "Your mail in the browser. Add a JMAP account (such as Fastmail): MailCraft talks to your mail server directly, and your password stays in this tab only."
+                } else if is_android {
+                    "Your mail, on this device. Add an email account: messages stay here for fast search and offline reading. Passwords are encrypted using Android Keystore."
                 } else {
                     "Your mail, on your computer. Add any IMAP account: messages are kept on this device so they're fast to search and readable offline. Your password stays in the system keychain."
                 };

@@ -161,6 +161,10 @@ impl Services for AndroidServices {
         self.phone_form_factor
     }
 
+    fn is_android(&self) -> bool {
+        true
+    }
+
     fn system_font_scale(&self) -> Option<f32> {
         self.font_scale
     }

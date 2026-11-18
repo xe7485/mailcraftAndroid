@@ -439,7 +439,7 @@ impl MailApp {
             self.ui.backstage_typing = ui.ctx().text_edit_focused();
         } else if self.session.accounts.is_empty() {
             egui::CentralPanel::default().frame(egui::Frame::new().fill(t.bg)).show(ui, |ui| {
-                widgets::welcome(ui, &t, self.session.jmap_only, acts);
+                widgets::welcome(ui, &t, self.session.jmap_only, self.services.is_android(), acts);
             });
         } else if self.ui.phone_layout {
             self.phone_panes(ui, acts);

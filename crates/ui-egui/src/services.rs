@@ -167,6 +167,10 @@ pub trait Services {
     fn phone_form_factor(&self) -> Option<bool> {
         None
     }
+    /// Whether the app is running as a native Android app.
+    fn is_android(&self) -> bool {
+        false
+    }
     fn system_font_scale(&self) -> Option<f32> {
         None
     }
