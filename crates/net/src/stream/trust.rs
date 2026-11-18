@@ -13,13 +13,14 @@ use rustls::{CertificateError, ClientConfig, DigitallySignedStruct, RootCertStor
 /// Certificates this computer explicitly distrusts (DER).
 pub(crate) type Distrusted = HashSet<Vec<u8>>;
 
+static SYSTEM_ROOTS: OnceLock<Vec<CertificateDer<'static>>> = OnceLock::new();
+
 /// The root certificates this computer trusts for servers, read once: the Windows certificate
 /// store, the macOS Keychain, the Linux and BSD bundle (or `SSL_CERT_FILE` / `SSL_CERT_DIR`).
 /// An internal CA that IT installed for an on-premises server (Exchange, a company IMAP server)
 /// is then trusted next to the bundled Mozilla roots. For SMTP too ([`crate::protocols::smtp`]).
 pub(crate) fn system_roots() -> &'static [CertificateDer<'static>] {
-    static ROOTS: OnceLock<Vec<CertificateDer<'static>>> = OnceLock::new();
-    ROOTS.get_or_init(|| {
+    SYSTEM_ROOTS.get_or_init(|| {
         let found = rustls_native_certs::load_native_certs();
         for e in found.errors.iter().take(3) {
             log::info!("system roots: {e}");
@@ -28,6 +29,17 @@ pub(crate) fn system_roots() -> &'static [CertificateDer<'static>] {
         log::info!("TLS: {} system root certificates, {} distrusted certificates", usable.len(), distrusted().len());
         usable
     })
+}
+
+/// Install Android's platform trust roots before the first network connection is made.
+#[cfg(target_os = "android")]
+pub(crate) fn set_android_system_roots(certs: Vec<Vec<u8>>) -> Result<(), String> {
+    if certs.len() > 2048 || certs.iter().map(Vec::len).try_fold(0usize, |total, size| total.checked_add(size)).is_none_or(|size| size > 8 << 20) {
+        return Err("Android system trust roots exceeded the import limit".into());
+    }
+    let certs = certs.into_iter().map(CertificateDer::from).collect();
+    let roots = usable_roots(certs, distrusted());
+    SYSTEM_ROOTS.set(roots).map_err(|_| "TLS system roots were already initialized".into())
 }
 
 /// What the system distrusts, read once: Windows' Untrusted Certificates (`Disallowed`), where

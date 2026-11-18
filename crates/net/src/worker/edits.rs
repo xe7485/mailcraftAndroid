@@ -105,11 +105,21 @@ impl Edits {
     /// Wait (a while at most) until the changes made so far are on disk: before what reads the
     /// cache as a whole (an export).
     pub(super) fn flush(&self) {
-        let Some(tx) = self.tx.as_ref() else { return };
+        let _ = self.flush_for(FLUSH_WAIT);
+    }
+
+    /// Wait no longer than `timeout` for edits already queued to reach the cache.
+    pub(super) fn flush_for(&self, timeout: Duration) -> bool {
+        let Some(tx) = self.tx.as_ref() else { return true };
         let (done, wait) = mpsc::channel();
-        if tx.send(Edit::Flush(done)).is_ok() && wait.recv_timeout(FLUSH_WAIT).is_err() {
-            log::warn!("changes to mail: still being saved after {} s", FLUSH_WAIT.as_secs());
+        if tx.send(Edit::Flush(done)).is_err() {
+            return false;
         }
+        if wait.recv_timeout(timeout).is_err() {
+            log::warn!("changes to mail: still being saved after {} s", timeout.as_secs());
+            return false;
+        }
+        true
     }
 
     /// Every change made on disk before the app goes: the thread ends with its queue.

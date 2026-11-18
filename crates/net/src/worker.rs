@@ -22,12 +22,17 @@ use crate::jmap;
 use crate::stream::Stream;
 use crate::sync::{SyncOptions, sync_folder_as};
 use crate::{NetError, Result, smtp};
+use sync_completion::SyncCompletion;
+pub use sync_completion::SyncWaiter;
+
+mod sync_completion;
 
 /// Sends events and wakes the UI.
 #[derive(Clone)]
 struct Sink {
     tx: Sender<Event>,
     wake: Arc<Mutex<Option<Arc<dyn Fn() + Send + Sync>>>>,
+    sync_completion: SyncCompletion,
 }
 
 impl Sink {
@@ -178,6 +183,7 @@ pub struct Pool {
     order: changes::Order,
     /// The drafts being filed on the server, shared with every worker (`changes/filing.rs`).
     filing: Arc<changes::Filing>,
+    sync_completion: SyncCompletion,
 }
 
 use changes::{DraftOrder, keep_draft};
@@ -210,6 +216,7 @@ fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
 impl Pool {
     pub fn new(store: Store, creds: Arc<dyn Credentials>) -> Pool {
         let (tx, rx) = mpsc::channel();
+        let sync_completion = SyncCompletion::default();
         let filing: Arc<changes::Filing> = Arc::default();
         // A test's folders go once the pool and its accounts' threads (each holds `filing`)
         // have ended: none writes in them after.
@@ -221,7 +228,7 @@ impl Pool {
         Pool {
             store,
             creds,
-            sink: Sink { tx, wake: Arc::new(Mutex::new(None)) },
+            sink: Sink { tx, wake: Arc::new(Mutex::new(None)), sync_completion: sync_completion.clone() },
             rx,
             workers: HashMap::new(),
             configs: HashMap::new(),
@@ -236,6 +243,7 @@ impl Pool {
             compacts: compact::Compacts::default(),
             order: changes::Order::default(),
             filing,
+            sync_completion,
         }
     }
 
@@ -244,6 +252,11 @@ impl Pool {
         if let Ok(mut w) = self.sink.wake.lock() {
             *w = Some(f);
         }
+    }
+
+    /// Wait for queued offline edits to reach the local cache before Android suspends the app.
+    pub fn flush_changes(&self, timeout: Duration) -> bool {
+        self.edits.flush_for(timeout)
     }
 
     /// Events reported since the last call (of how a pass of the search index is going, the
@@ -526,6 +539,8 @@ struct Worker {
     /// Outbox messages sent, or refused for good, that the Outbox couldn't be told of (its files
     /// couldn't be changed): not sent again while this runs.
     outbox_done: std::collections::HashSet<u64>,
+    /// Platform-triggered complete sync passes waiting for this worker's next full pass.
+    pending_sync_requests: Vec<u64>,
 }
 
 /// Where an account keeps its folders' own windows.
@@ -649,6 +664,7 @@ impl Worker {
             quick_start: None,
             no_password: Arc::default(),
             outbox_done: std::collections::HashSet::new(),
+            pending_sync_requests: Vec::new(),
         }
     }
 

@@ -6,9 +6,9 @@ use mailcraft_model::Job;
 use super::*;
 
 /// Largest message file read (`.eml`).
-const MAX_MESSAGE: u64 = 64 << 20;
+const MAX_MESSAGE: u64 = crate::MAX_MAIL_FILE_BYTES;
 /// Largest calendar or contacts file read (`.ics`, `.vcf`).
-const MAX_PIM: u64 = 16 << 20;
+const MAX_PIM: u64 = crate::MAX_PIM_FILE_BYTES;
 /// How an Outlook message file (a compound file) begins.
 const OUTLOOK_FILE: [u8; 8] = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
 

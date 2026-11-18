@@ -106,7 +106,7 @@ impl Pool {
             }
             other => {
                 // Asked to send or receive anew: a stop asked before isn't this one's.
-                if matches!(other, Job::SyncAll { .. } | Job::FlushOutbox { .. } | Job::Send { .. })
+                if matches!(other, Job::SyncAll { .. } | Job::SyncAllTracked { .. } | Job::FlushOutbox { .. } | Job::Send { .. })
                     && let Some(h) = self.workers.get(other.account())
                 {
                     h.cancel.store(false, Ordering::Relaxed);
@@ -178,6 +178,7 @@ impl Pool {
             }
             // Working offline: nothing connects, by choice.
             Job::SyncAll { .. } | Job::SyncFolder { .. } | Job::FlushOutbox { .. } if self.offline && !running => {}
+            Job::SyncAllTracked { request_id, .. } if self.offline && !running => self.sync_completion.finish(request_id, false),
             Job::SaveDraft { account, raw, folder, replaces } if mail_offline => self.save_draft_offline(account, raw, folder, replaces),
             Job::FindIdentities { account } if mail_offline => {
                 self.sink.emit(Event::IdentitiesFound { account, found: Vec::new(), error: Some(OFFLINE.into()) });
@@ -244,6 +245,9 @@ impl Pool {
         let quick = self.configs.get(&id).is_some_and(|c| quick_job(&job, c));
         self.save_on_its_way(&job);
         let Some(h) = self.workers.get(&id) else {
+            if let Job::SyncAllTracked { request_id, .. } = job {
+                self.sync_completion.finish(request_id, false);
+            }
             self.sink.emit(Event::Notice { account: id, message: "the account is not connected".into() });
             return;
         };
@@ -261,6 +265,9 @@ impl Pool {
             None => job,
         };
         if let Err(mpsc::SendError(unsent)) = h.tx.send(job) {
+            if let Job::SyncAllTracked { request_id, .. } = &unsent {
+                self.sync_completion.finish(*request_id, false);
+            }
             // Mail that was to be copied there is answered for: none went.
             if let Job::FileCopies { account, folder, mail, moved } = unsent {
                 let failed = mail.into_iter().map(|(k, _)| (k, "the account's connection stopped".to_string())).collect();
@@ -320,7 +327,12 @@ impl Pool {
         }
         let Some(config) = self.configs.get(id).filter(|c| c.check_by_hand).cloned() else { return };
         let needs_server = match job {
-            Job::SyncAll { .. } | Job::SyncFolder { .. } | Job::Send { .. } | Job::FlushOutbox { .. } | Job::MoreMail { .. } => true,
+            Job::SyncAll { .. }
+            | Job::SyncAllTracked { .. }
+            | Job::SyncFolder { .. }
+            | Job::Send { .. }
+            | Job::FlushOutbox { .. }
+            | Job::MoreMail { .. } => true,
             Job::SearchServer { .. } | Job::SearchDirectory { .. } | Job::GetVacation { .. } | Job::SetVacation { .. } => true,
             Job::GetServerRules { .. } | Job::SetServerRules { .. } | Job::FreeBusy { .. } => true,
             Job::FindIdentities { .. } => true,

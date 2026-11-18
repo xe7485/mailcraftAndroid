@@ -367,6 +367,7 @@ impl Worker {
     pub(crate) fn sync_all(&mut self, rx: &Receiver<Job>) {
         let began = Instant::now();
         if !self.relist() {
+            self.sync_finished(false);
             return;
         }
         // Exchange: told from now on which folders change, for the looks between full syncs (a
@@ -434,6 +435,7 @@ impl Worker {
             self.transfer_ended(Transfer { folder: String::new(), ..going }, lost);
         }
         if self.closed {
+            self.sync_finished(false);
             return;
         }
         // Report Online after mail; CalDAV/EWS calendars and contacts can take far longer and
@@ -454,6 +456,19 @@ impl Worker {
         if self.conn.is_some() && !calendars_read && !self.in_pim {
             self.calendars_and_contacts(rx);
         }
+        self.sync_finished(self.conn.is_some() && !self.closed);
+    }
+
+    fn sync_finished(&mut self, success: bool) {
+        self.sink.emit(Event::SyncFinished { account: self.id(), request_id: None, success });
+        for request_id in std::mem::take(&mut self.pending_sync_requests) {
+            self.tracked_sync_finished(request_id, success);
+        }
+    }
+
+    pub(super) fn tracked_sync_finished(&self, request_id: u64, success: bool) {
+        self.sink.sync_completion.finish(request_id, success);
+        self.sink.emit(Event::SyncFinished { account: self.id(), request_id: Some(request_id), success });
     }
 
     /// The account's calendars and contacts, synced with their server now.

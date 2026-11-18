@@ -35,6 +35,7 @@ how real files behave, and its results were compared with theirs.
 | `assets/app-icon/hicolor/64x64/apps/io.github.zidan44.MailCraft.png` | MailCraft contributors | Rendered by `cargo xtask icons` (`xtask/src/icons.rs`) | MIT OR Apache-2.0 |
 | `assets/app-icon/hicolor/scalable/apps/io.github.zidan44.MailCraft.svg` | MailCraft contributors | Rendered by `cargo xtask icons` (`xtask/src/icons.rs`) | MIT OR Apache-2.0 |
 | `assets/app-icon/mailcraft-1024.png` | MailCraft contributors | Rendered by `cargo xtask icons` (`xtask/src/icons.rs`) | MIT OR Apache-2.0 |
+| `apps/mailcraft-android/resources/drawable-nodpi/mailcraft.png` | MailCraft contributors | Rendered from MailCraft's app icon (`xtask/src/icons.rs`) | MIT OR Apache-2.0 |
 | `fuzz/seeds/photo/geotagged.jpg` | MailCraft contributors | Written byte by byte as a fuzzing seed (a few header bytes, no picture) | MIT OR Apache-2.0 |
 | `fuzz/seeds/photo/geotagged.png` | MailCraft contributors | Written byte by byte as a fuzzing seed (a few header bytes, no picture) | MIT OR Apache-2.0 |
 | `crates/smime/testdata/encrypted-cbc.eml` | MailCraft contributors | Made with `openssl cms` from MailCraft's own test certificates (S/MIME tests) | MIT OR Apache-2.0 |

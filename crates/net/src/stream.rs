@@ -15,6 +15,12 @@ pub(crate) mod trust;
 pub use trust::Trusted;
 pub(crate) use trust::{system_roots, system_verifier};
 
+/// Install Android's platform certificate roots before networking begins.
+#[cfg(target_os = "android")]
+pub fn set_android_system_roots(certs: Vec<Vec<u8>>) -> std::result::Result<(), String> {
+    trust::set_android_system_roots(certs)
+}
+
 pub const CONNECT_TIMEOUT: Duration = Duration::from_secs(20);
 pub const IO_TIMEOUT: Duration = Duration::from_secs(60);
 /// Per-address budget when more candidates remain. With a black-holed IPv6 route each AAAA

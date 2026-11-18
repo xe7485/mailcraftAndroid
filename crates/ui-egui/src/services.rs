@@ -15,6 +15,10 @@ pub trait Backend {
     /// MailCraft is closing: work that writes to the data files (an import) is paused, and
     /// waited for a few seconds at most.
     fn shutdown(&mut self) {}
+    /// Give recent offline changes a chance to reach the cache before the app is suspended.
+    fn flush_changes(&mut self, _timeout: std::time::Duration) -> bool {
+        true
+    }
 }
 
 /// No network (the sample mailbox, tests).
@@ -37,6 +41,16 @@ pub enum UpdateState {
     /// Downloaded and checked: installed as MailCraft closes; `asks` says what the system asks
     /// on the way.
     Ready { version: String, asks: InstallAsks },
+}
+
+/// Where to go when the user opens an app notification.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum NotificationTarget {
+    Inbox,
+    Message { key: String },
+    Reminder { account: String, uid: String, occurrence: i64, due: i64, task: bool },
+    Calendar,
+    Tasks,
 }
 
 /// What the system asks as an update installs, for the window to say so first.
@@ -83,6 +97,8 @@ pub enum Lane {
     Pictures,
     /// Getting a message ready to read.
     Reading,
+    /// Decoding a video attachment's preview frame.
+    Videos,
 }
 
 /// Work handed to a lane.
@@ -128,6 +144,25 @@ pub enum KeptOnClose {
 pub trait Services {
     /// Unix seconds and the local UTC offset in seconds.
     fn clock(&self) -> (i64, i32);
+    /// The app returned to the foreground; refresh cached platform settings if needed.
+    fn on_resume(&mut self) {}
+    fn phone_form_factor(&self) -> Option<bool> {
+        None
+    }
+    fn system_font_scale(&self) -> Option<f32> {
+        None
+    }
+    fn system_language(&self) -> Option<&str> {
+        None
+    }
+    fn language_changed(&mut self) {}
+    fn can_open_notification_settings(&self) -> bool {
+        false
+    }
+    fn open_notification_settings(&mut self) -> Result<(), String> {
+        Err("notification settings are not available".into())
+    }
+    fn refresh_display_configuration(&mut self) {}
     /// Whether the window has no title bar of the system's and MailCraft's top bar is its title
     /// bar, with the window's buttons, its drag and its resize edges (Windows; issue #22).
     fn own_title_bar(&self) -> bool {
@@ -153,6 +188,9 @@ pub trait Services {
     fn save_path(&mut self, suggested: &str) -> Option<PathBuf>;
     /// Open a file with the system's default app.
     fn open_path(&mut self, path: &std::path::Path) -> Result<(), String>;
+    fn can_open_path(&self) -> bool {
+        true
+    }
     /// Where a build that updates itself is with the next version. The default: nowhere.
     fn update_state(&mut self) -> UpdateState {
         UpdateState::None
@@ -165,6 +203,9 @@ pub trait Services {
     fn keep_update_for_later(&mut self) {}
     /// Show a desktop notification (new mail). The default does nothing.
     fn notify(&mut self, _title: &str, _body: &str) {}
+    fn notify_for(&mut self, title: &str, body: &str, _target: NotificationTarget) {
+        self.notify(title, body);
+    }
     /// Where an installed Craft app is (`pdfcraft`, `wordcraft`…), if it is.
     fn craft_app(&mut self, _command: &str) -> Option<PathBuf> {
         None
@@ -216,21 +257,109 @@ pub trait Services {
     fn rtl_font(&mut self) -> Option<Vec<u8>> {
         None
     }
+    fn rtl_fonts(&mut self) -> Vec<Vec<u8>> {
+        self.rtl_font().into_iter().collect()
+    }
     /// A picture on the clipboard, as PNG bytes (`None` when there is none).
     fn clipboard_picture(&mut self) -> Option<Vec<u8>> {
+        None
+    }
+    fn clipboard_picture_later(&mut self) -> Option<bool> {
+        None
+    }
+    fn take_clipboard_picture(&mut self) -> Option<Option<Vec<u8>>> {
         None
     }
     /// The files copied to the clipboard (in a file manager), to attach; empty when there are none.
     fn clipboard_files(&mut self) -> Vec<PathBuf> {
         Vec::new()
     }
+    fn clipboard_files_later(&mut self) -> Option<bool> {
+        None
+    }
+    fn take_clipboard_files(&mut self) -> Option<Result<Vec<PathBuf>, String>> {
+        None
+    }
     /// Pictures to insert (an empty list when cancelled). The default offers the file picker.
     fn pick_pictures(&mut self) -> Vec<PathBuf> {
         self.pick_files()
     }
+    fn back_key(&self) -> Option<egui::Key> {
+        None
+    }
     /// Open a web address in the browser. The default can't.
     fn open_url(&mut self, _url: &str) -> Result<(), String> {
         Err("not available".into())
+    }
+    fn can_dial_phone(&self) -> bool {
+        false
+    }
+    fn dial_phone(&mut self, _number: &str) -> Result<(), String> {
+        Err("not available".into())
+    }
+    fn can_open_map(&self) -> bool {
+        false
+    }
+    fn open_map(&mut self, _address: &str) -> Result<(), String> {
+        Err("not available".into())
+    }
+    fn can_share_contacts(&self) -> bool {
+        false
+    }
+    fn can_share_files(&self) -> bool {
+        false
+    }
+    fn can_export_contacts(&self) -> bool {
+        false
+    }
+    fn can_add_to_system_contacts(&self) -> bool {
+        false
+    }
+    fn can_share_calendar_events(&self) -> bool {
+        false
+    }
+    fn can_export_calendar_events(&self) -> bool {
+        false
+    }
+    fn can_add_to_system_calendar(&self) -> bool {
+        false
+    }
+    fn share_contact(&mut self, _title: &str, _vcard: &str) -> Result<(), String> {
+        Err("sharing contacts is not available".into())
+    }
+    fn share_file(&mut self, _name: &str, _mime: &str, _bytes: &[u8]) -> Result<(), String> {
+        Err("sharing files is not available".into())
+    }
+    fn share_message(&mut self, name: &str, mime: &str, bytes: &[u8]) -> Result<(), String> {
+        self.share_file(name, mime, bytes)
+    }
+    fn share_files(&mut self, files: &[(&str, &str, &[u8])]) -> Result<(), String> {
+        if let [(name, mime, bytes)] = files {
+            return self.share_file(name, mime, bytes);
+        }
+        Err("sharing several files is not available".into())
+    }
+    fn add_to_system_contacts(&mut self, _contact: &mailcraft_engine::model::vcard::Card) -> Result<(), String> {
+        Err("adding a contact to the system address book is not available".into())
+    }
+    fn share_calendar_event(&mut self, _title: &str, _ical: &str) -> Result<(), String> {
+        Err("sharing calendar events is not available".into())
+    }
+    fn add_to_system_calendar(
+        &mut self,
+        _title: &str,
+        _location: &str,
+        _description: &str,
+        _start: i64,
+        _end: i64,
+        _all_day: bool,
+        _timezone: Option<&str>,
+        _rrule: Option<&str>,
+        _rdates: &[i64],
+        _exdates: &[i64],
+        _attendees: &[String],
+    ) -> Result<(), String> {
+        Err("adding an event to the system calendar is not available".into())
     }
     /// Open a message (its key) in a browser window of its own, as web mail does; `false` when windows are
     /// windows here.
@@ -242,6 +371,19 @@ pub trait Services {
     /// An Outlook data file to open (`None` when cancelled).
     fn pick_data_file(&mut self) -> Option<PathBuf> {
         None
+    }
+    fn export_file(&mut self, _account: &str, _name: &str, _path: PathBuf) -> Result<(), String> {
+        Err("saving a file from disk is not available".into())
+    }
+    fn event(&mut self, _event: &Event) {}
+    fn open_file(&mut self, name: &str, bytes: &[u8]) {
+        self.download(name, bytes);
+    }
+    fn open_file_owned(&mut self, name: &str, bytes: Vec<u8>) {
+        self.open_file(name, &bytes);
+    }
+    fn open_file_owned_with_mime(&mut self, name: &str, _mime: &str, bytes: Vec<u8>) {
+        self.open_file_owned(name, bytes);
     }
     /// A saved message to look at, `.eml` or `.msg` (`None` when cancelled).
     fn pick_mail_file(&mut self) -> Option<PathBuf> {
@@ -301,13 +443,37 @@ pub trait Services {
     fn can_drag_out(&self) -> bool {
         false
     }
+    fn has_files(&self) -> bool {
+        !self.downloads()
+    }
     /// Whether files are handed over as downloads (the browser, which has no files) instead of
     /// saved through [`Services::save_path`].
     fn downloads(&self) -> bool {
         false
     }
+    fn opens_files_after_saving(&self) -> bool {
+        false
+    }
     /// Hand `bytes` to the user as a download named `name`.
     fn download(&mut self, _name: &str, _bytes: &[u8]) {}
+    fn download_owned(&mut self, name: &str, bytes: Vec<u8>) {
+        self.download(name, &bytes);
+    }
+    fn download_owned_with_mime(&mut self, name: &str, _mime: &str, bytes: Vec<u8>) {
+        self.download_owned(name, bytes);
+    }
+    fn save_as_owned(&mut self, name: &str, mime: &str, bytes: Vec<u8>) {
+        self.download_owned_with_mime(name, mime, bytes);
+    }
+    fn take_download_completions(&mut self) -> usize {
+        0
+    }
+    fn downloads_files(&self) -> bool {
+        false
+    }
+    fn take_downloaded(&mut self) -> Vec<String> {
+        Vec::new()
+    }
     /// 28 bytes from the system's source of randomness, for what locks a backup (issue #83);
     /// `None` where the window has none to give.
     fn random_bytes(&mut self) -> Option<[u8; 28]> {
@@ -328,6 +494,17 @@ pub trait Services {
     fn take_picked(&mut self) -> Vec<(Picked, String, Vec<u8>)> {
         Vec::new()
     }
+    fn take_pick_errors(&mut self) -> Vec<String> {
+        Vec::new()
+    }
+    fn cancel_pending_pick(&mut self) {}
+    fn receive_shared_picker_file(&mut self, _path: &std::path::Path, _last_in_batch: bool) -> Result<bool, String> {
+        Ok(false)
+    }
+    fn discard_picked_file(&mut self, _path: &std::path::Path) {}
+    fn track_picked_file(&mut self, _path: &std::path::Path) {}
+    fn keep_staged_files(&mut self, _active: &[PathBuf]) {}
+    fn retain_picked_file(&mut self, _path: &std::path::Path) {}
     /// Whether the desktop prefers dark, where the window system doesn't say (Linux and the BSDs
     /// read it from the desktop portal); `None` when not known.
     fn system_dark(&self) -> Option<bool> {

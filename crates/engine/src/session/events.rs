@@ -96,6 +96,7 @@ impl Session {
             Event::Indexed { account, work, generation, failed, finished } => {
                 self.indexed(&account, IndexPass { work, generation, failed, finished })
             }
+            Event::SyncFinished { .. } => {}
             Event::AttachmentsKnown { account, folder, with, without } => self.files_known(&account, &folder, &with, &without),
             Event::Exported { account, messages, skipped, already, occurrences, replaced, folders_skipped, done, error } => {
                 let left = accounts::ExportLeft { skipped, already, occurrences, replaced, folders: folders_skipped };

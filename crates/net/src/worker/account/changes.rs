@@ -24,6 +24,21 @@ impl Worker {
                 }
                 self.last_full = None;
             }
+            Job::SyncAllTracked { request_id, .. } => {
+                self.pending_sync_requests.push(request_id);
+                self.kept.retry_now();
+                if self.conn.is_none() {
+                    self.auth_failed = false;
+                    self.token_retried = false;
+                    self.next_attempt = Instant::now();
+                    self.connect_and_sync();
+                }
+                if self.conn.is_none() {
+                    self.pending_sync_requests.retain(|pending| *pending != request_id);
+                    self.tracked_sync_finished(request_id, false);
+                }
+                self.last_full = None;
+            }
             Job::SyncFolder { folder, .. } => {
                 if self.conn.is_none() {
                     self.next_attempt = Instant::now();

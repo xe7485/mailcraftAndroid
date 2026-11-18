@@ -275,6 +275,7 @@ impl Pool {
     /// them to write what they hold (MailCraft closing). The changes to mail made so far are on
     /// disk first (a message marked read just before closing stays read).
     pub fn shutdown(&mut self) {
+        self.sync_completion.cancel_all();
         self.cancel_compacts();
         self.edits.finish();
         self.indexer.shutdown();
@@ -292,6 +293,7 @@ impl Pool {
 /// they hold). Waits for the changes to mail made so far to be on disk (`edits.rs`).
 impl Drop for Pool {
     fn drop(&mut self) {
+        self.sync_completion.cancel_all();
         self.edits.finish();
         self.stop_all();
         self.pause_imports(None);

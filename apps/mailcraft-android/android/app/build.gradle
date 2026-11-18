@@ -1,0 +1,131 @@
+plugins {
+    id "com.android.application"
+}
+
+def cargoRoot = rootProject.file("../../..")
+def workspaceToml = new File(cargoRoot, "Cargo.toml").getText("UTF-8")
+def versionMatcher = workspaceToml =~ /(?ms)^\[workspace\.package\]\s.*?^version\s*=\s*"([^"]+)"/
+if (!versionMatcher.find()) {
+    throw new GradleException("Could not read MailCraft's version from workspace Cargo.toml")
+}
+def appVersion = versionMatcher.group(1)
+def versionParts = appVersion.tokenize(".-").take(3).collect { it.toInteger() }
+def numericVersion = versionParts[0] * 1000000 + versionParts[1] * 1000 + versionParts[2]
+def configuredAbis = (findProperty("mailcraftAbis") ?: "arm64-v8a,x86_64")
+        .split(",")
+        .collect { it.trim() }
+        .findAll { !it.isEmpty() }
+def isolatedAndroidTest = (findProperty("mailcraftTestProbe") ?: "false").toBoolean()
+def rustTargets = [
+        "arm64-v8a": "aarch64-linux-android",
+        "x86_64": "x86_64-linux-android",
+        "armeabi-v7a": "armv7-linux-androideabi"
+]
+
+android {
+    namespace "ai.storyteller.mailcraft"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "ai.storyteller.mailcraft"
+        minSdk 31
+        targetSdk 35
+        versionCode numericVersion
+        versionName appVersion
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    sourceSets {
+        main {
+            res.srcDir("../../resources")
+        }
+        debug {
+            jniLibs.srcDir(layout.buildDirectory.dir("generated/rustJniLibs/debug"))
+        }
+        release {
+            jniLibs.srcDir(layout.buildDirectory.dir("generated/rustJniLibs/release"))
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix isolatedAndroidTest ? ".debug.probe" : ".debug"
+            versionNameSuffix "-debug"
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt")
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging true
+        }
+    }
+}
+
+dependencies {
+    implementation "androidx.concurrent:concurrent-futures:1.3.0"
+    implementation "androidx.work:work-runtime:2.12.0"
+    implementation "androidx.work:work-multiprocess:2.12.0"
+    androidTestImplementation "androidx.test:runner:1.6.2"
+    androidTestImplementation "androidx.test.ext:junit:1.2.1"
+}
+
+def registerRustBuild = { String variant, boolean release ->
+    def oauthRegistrations = [
+        MAILCRAFT_MICROSOFT_CLIENT_ID  : "mailcraftMicrosoftClientId",
+        MAILCRAFT_GOOGLE_CLIENT_ID     : "mailcraftGoogleClientId",
+        MAILCRAFT_GOOGLE_CLIENT_SECRET : "mailcraftGoogleClientSecret",
+    ]
+    def oauthValue = { String name ->
+        providers.gradleProperty(oauthRegistrations[name]).orElse(providers.environmentVariable(name)).orElse("")
+    }
+    def outputDirectory = layout.buildDirectory.dir("generated/rustJniLibs/${variant}")
+    def nativeBuild = tasks.register("buildMailCraftRust${variant.capitalize()}") {
+        outputs.dir(outputDirectory)
+        oauthRegistrations.keySet().each { name ->
+            inputs.property("oauthRegistration_${name}", oauthValue(name))
+        }
+        inputs.files(fileTree(cargoRoot) {
+            include "Cargo.toml", "Cargo.lock", ".cargo/**", "apps/**", "crates/**"
+            exclude "apps/mailcraft-android/android/**", "**/target/**", "**/build/**"
+        })
+        inputs.property("rustTargetAbis", configuredAbis)
+        inputs.property("releaseBuild", release)
+        doLast {
+            delete(outputDirectory)
+            configuredAbis.each { abi ->
+                def target = rustTargets[abi]
+                if (target == null) {
+                    throw new GradleException("Unsupported MailCraft Android ABI: ${abi}")
+                }
+                def cargoArguments = ["apk", "--", "build", "--package", "mailcraft-android", "--lib", "--target", target]
+                if (release) {
+                    cargoArguments.add("--release")
+                }
+                exec {
+                    workingDir cargoRoot
+                    environment oauthRegistrations.keySet().collectEntries { name -> [(name): oauthValue(name).get()] }
+                    commandLine(["cargo"] + cargoArguments)
+                }
+                copy {
+                    from new File(cargoRoot, "target/${target}/${release ? 'release' : 'debug'}/libmailcraft_android.so")
+                    into new File(outputDirectory.get().asFile, abi)
+                }
+            }
+        }
+    }
+    tasks.matching { it.name == "pre${variant.capitalize()}Build" }.configureEach {
+        dependsOn(nativeBuild)
+    }
+}
+
+registerRustBuild("debug", false)
+registerRustBuild("release", true)

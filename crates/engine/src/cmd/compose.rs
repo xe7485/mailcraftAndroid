@@ -169,7 +169,7 @@ pub(super) fn compose_update(s: &mut Session, v: &Value) -> CmdResult {
 }
 
 /// Largest attachment accepted (most servers refuse messages over 25–35 MB).
-pub(super) const ATTACH_MAX: usize = 25 << 20;
+pub(super) const ATTACH_MAX: usize = crate::MAX_ATTACHMENT_BYTES;
 /// [`ATTACH_MAX`] in MB, as the messages say it.
 const ATTACH_MAX_MB: usize = ATTACH_MAX >> 20;
 

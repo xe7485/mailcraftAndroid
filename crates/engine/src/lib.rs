@@ -45,6 +45,12 @@ pub use session::{
     signature_parts,
 };
 
+/// Limits shared with native hosts that stage files before passing them to commands.
+pub const MAX_ATTACHMENT_BYTES: usize = 25 << 20;
+pub const MAX_MAIL_FILE_BYTES: u64 = 64 << 20;
+pub const MAX_PIM_FILE_BYTES: u64 = 16 << 20;
+pub const MAX_DATA_ARCHIVE_BYTES: u64 = 4 << 30;
+
 /// What `--version` prints for the program `name` (`mailcraft`, `mailcraft-cli`): its version,
 /// plus the commit and date of release builds (packaging/common.sh).
 pub fn version_line(name: &str) -> String {

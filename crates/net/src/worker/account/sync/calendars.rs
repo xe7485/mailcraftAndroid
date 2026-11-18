@@ -133,6 +133,11 @@ impl Worker {
                     self.auth_failed = false;
                     due = Some(Instant::now());
                 }
+                Ok(Job::SyncAllTracked { request_id, .. }) => {
+                    self.pending_sync_requests.push(request_id);
+                    self.auth_failed = false;
+                    due = Some(Instant::now());
+                }
                 // A change made here: sent at once, unless the sign-in is refused (it would be
                 // again, for every change).
                 Ok(Job::SyncDav { .. }) if !self.auth_failed => due = Some(Instant::now()),
@@ -149,6 +154,10 @@ impl Worker {
         self.working(true);
         let done = self.dav_pass();
         self.working(false);
+        let success = done.is_ok();
+        for request_id in std::mem::take(&mut self.pending_sync_requests) {
+            self.tracked_sync_finished(request_id, success);
+        }
         let now_at = Instant::now();
         match done {
             Ok(()) => {

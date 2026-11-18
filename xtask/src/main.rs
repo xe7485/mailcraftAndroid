@@ -62,7 +62,7 @@ const LAYERS: &[(&str, u8)] = &[
 
 /// The workspace's binaries and tools, above every layer: they may depend on anything. Every
 /// other package must have a layer, so a new crate can't go unchecked.
-const APPS: &[&str] = &["mailcraft", "mailcraft-cli", "mailcraft-web", "xtask"];
+const APPS: &[&str] = &["mailcraft", "mailcraft-android", "mailcraft-cli", "mailcraft-web", "xtask"];
 
 /// Crates that never build for the web (sockets, threads, TLS).
 const NATIVE_ONLY: &[&str] = &["mailcraft-keys", "mailcraft-net"];

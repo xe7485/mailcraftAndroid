@@ -1,7 +1,7 @@
 # Roadmap
 
 MailCraft is heading toward the everyday Outlook mail workflow, over IMAP and SMTP,
-as an open-source, local-first app for Windows, macOS, Linux and the browser.
+as an open-source, local-first app for Windows, macOS, Linux, Android and the browser.
 
 ## Where it stands
 
@@ -18,7 +18,7 @@ These numbers are as of v0.34.
 | Commands | 283 (list them with `mailcraft-cli commands`) |
 | Tests | 2,006, over in-memory servers, data files, TCP and the headless UI |
 | Languages | 16, including Arabic and Hebrew |
-| Platforms | Windows, macOS and Linux; the browser, for JMAP accounts |
+| Platforms | Windows, macOS and Linux; Android 12+; the browser, for JMAP accounts |
 
 ## Next
 

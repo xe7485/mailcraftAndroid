@@ -2,6 +2,7 @@
 
 mod actions;
 mod alt_code;
+mod android;
 mod bodies;
 pub(crate) mod boot;
 mod chrome;
