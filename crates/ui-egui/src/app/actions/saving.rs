@@ -138,13 +138,19 @@ impl MailApp {
     /// Every attachment (`None`), or some (by index), saved into a folder picked; in the
     /// browser, every one downloaded.
     pub(super) fn save_attachments(&mut self, some: Option<Vec<usize>>) {
-        if some.is_none() && self.services.downloads() {
+        if self.services.downloads() {
             let files: Vec<(usize, String)> = self
                 .session
                 .reading
                 .as_ref()
                 .and_then(|r| r.parsed.as_ref())
-                .map(|p| p.attachments.iter().filter(|a| !a.inline).map(|a| (a.index, a.name.clone())).collect())
+                .map(|p| {
+                    p.attachments
+                        .iter()
+                        .filter(|attachment| !attachment.inline && some.as_ref().is_none_or(|indices| indices.contains(&attachment.index)))
+                        .map(|attachment| (attachment.index, attachment.name.clone()))
+                        .collect()
+                })
                 .unwrap_or_default();
             // One that can't be had is said, not skipped unseen (the rest looked like all).
             for (i, name) in files {
