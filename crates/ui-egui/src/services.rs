@@ -469,6 +469,11 @@ pub trait Services {
     fn downloads(&self) -> bool {
         false
     }
+    /// Whether an individual save should ask for a document-provider destination instead of
+    /// writing straight to the app's downloads area.
+    fn can_save_as(&self) -> bool {
+        false
+    }
     fn opens_files_after_saving(&self) -> bool {
         false
     }

@@ -7,6 +7,14 @@ impl MailApp {
     /// The message as a PDF, saved where asked, then opened to print from the viewer (in the
     /// browser, downloaded).
     pub(super) fn print(&mut self) {
+        if self.services.can_save_as() {
+            let name = format!("{}.pdf", self.message_file_name());
+            match self.session.message_pdf() {
+                Ok(bytes) => self.services.open_file_owned_with_mime(&name, "application/pdf", bytes),
+                Err(e) => self.session.notice(e.to_string(), true),
+            }
+            return;
+        }
         if self.services.downloads() {
             self.download_message(true);
             return;
@@ -32,6 +40,18 @@ impl MailApp {
     /// The message saved where asked, as a PDF or as its `.eml` source (in the browser,
     /// downloaded).
     pub(super) fn save_message(&mut self, pdf: bool) {
+        if self.services.can_save_as() {
+            let (name, mime, bytes) = if pdf {
+                (format!("{}.pdf", self.message_file_name()), "application/pdf", self.session.message_pdf())
+            } else {
+                (format!("{}.eml", self.message_file_name()), "message/rfc822", self.session.message_source())
+            };
+            match bytes {
+                Ok(bytes) => self.services.save_as_owned(&name, mime, bytes),
+                Err(e) => self.session.notice(e.to_string(), true),
+            }
+            return;
+        }
         if self.services.downloads() {
             self.download_message(pdf);
             return;
@@ -97,6 +117,17 @@ impl MailApp {
     }
 
     pub(super) fn save_attachment(&mut self, i: usize) {
+        if self.services.can_save_as() {
+            let name = mailcraft_engine::mime::sanitize_filename(&self.attachment_name(i));
+            match self.session.attachment_bytes(i) {
+                Ok(bytes) => {
+                    let mime = mailcraft_engine::mime::mime_from_name(&name);
+                    self.services.save_as_owned(&name, &mime, bytes);
+                }
+                Err(e) => self.session.notice(e.to_string(), true),
+            }
+            return;
+        }
         if self.services.downloads() {
             self.download_attachment(i);
             return;
@@ -110,6 +141,16 @@ impl MailApp {
     /// A picture of an open message saved as a file (issue #110); in the browser, downloaded.
     pub(super) fn save_picture(&mut self, key: &MessageKey, src: &str) {
         let name = self.session.picture_name(key, src);
+        if self.services.can_save_as() {
+            match self.session.picture_bytes(key, src) {
+                Some(bytes) => {
+                    let mime = mailcraft_engine::mime::mime_from_name(&name);
+                    self.services.save_as_owned(&name, &mime, bytes);
+                }
+                None => self.session.notice(tl!("The picture couldn't be saved").to_string(), true),
+            }
+            return;
+        }
         if self.services.downloads() {
             match self.session.picture_bytes(key, src) {
                 Some(b) => self.services.download(&name, &b),
@@ -216,6 +257,16 @@ impl MailApp {
     /// A note's file `index`, opened in another app (saved for it first, never when it could run
     /// a program) or saved where asked; in the browser, downloaded.
     pub(super) fn note_file(&mut self, uid: &str, index: usize, open: bool) {
+        if self.services.can_save_as() && !open {
+            match self.session.note_file(uid, index) {
+                Ok((name, bytes)) => {
+                    let mime = mailcraft_engine::mime::mime_from_name(&name);
+                    self.services.save_as_owned(&name, &mime, bytes);
+                }
+                Err(e) => self.session.notice(e.to_string(), true),
+            }
+            return;
+        }
         if self.services.downloads() {
             match self.session.note_file(uid, index) {
                 Ok((name, b)) => self.services.download(&name, &b),

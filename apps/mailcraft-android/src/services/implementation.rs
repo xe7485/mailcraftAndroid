@@ -759,6 +759,10 @@ impl Services for AndroidServices {
         true
     }
 
+    fn can_save_as(&self) -> bool {
+        true
+    }
+
     fn has_files(&self) -> bool {
         true
     }

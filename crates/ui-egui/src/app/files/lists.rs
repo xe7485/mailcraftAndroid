@@ -9,6 +9,13 @@ const CATEGORIES: &str = "MailCraft categories.json";
 
 impl MailApp {
     pub(crate) fn export_rules(&mut self) {
+        if self.services.can_save_as() {
+            match self.session.rules_file() {
+                Ok(bytes) => self.services.save_as_owned(RULES, "application/json", bytes),
+                Err(e) => self.session.notice(e.to_string(), true),
+            }
+            return;
+        }
         if self.services.downloads() {
             match self.session.rules_file() {
                 Ok(bytes) => {
@@ -64,6 +71,13 @@ impl MailApp {
     }
 
     pub(crate) fn export_categories(&mut self) {
+        if self.services.can_save_as() {
+            match self.session.categories_file() {
+                Ok(bytes) => self.services.save_as_owned(CATEGORIES, "application/json", bytes),
+                Err(e) => self.session.notice(e.to_string(), true),
+            }
+            return;
+        }
         if self.services.downloads() {
             match self.session.categories_file() {
                 Ok(bytes) => {
