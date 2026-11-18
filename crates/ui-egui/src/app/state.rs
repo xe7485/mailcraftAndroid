@@ -124,6 +124,12 @@ pub struct UiState {
     /// The window was too narrow for the search box beside the tabs: it has a row of its own
     /// (measured as the bar is drawn, for the next frame).
     pub(crate) bar_two_rows: bool,
+    /// The platform says this window is on a phone, where navigation and panes use one column.
+    pub(crate) phone_layout: bool,
+    /// The phone's folder and module drawer is open over the current page.
+    pub(crate) phone_drawer_open: bool,
+    /// The phone's compact search field is open in the top bar.
+    pub(crate) phone_search_open: bool,
     /// The ribbon's buttons from this one on go without their labels: it didn't fit the window
     /// ([`widgets::RibbonFit`]).
     pub(crate) ribbon_icons_from: usize,

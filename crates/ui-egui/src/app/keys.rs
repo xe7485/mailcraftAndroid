@@ -17,6 +17,9 @@ impl MailApp {
     pub(crate) fn shortcuts(&mut self, ctx: &egui::Context) {
         // A message's text had the keyboard last frame (it says so again while it keeps it).
         let text_keys = std::mem::take(&mut self.ui.text_selection.keys);
+        if self.phone_back(ctx) {
+            return;
+        }
         if self.ui.backstage.is_none() {
             self.ui.backstage_typing = false;
         }

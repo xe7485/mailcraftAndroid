@@ -50,6 +50,13 @@ impl Session {
         self.refresh_list();
     }
 
+    /// Leave the phone's message detail view, keeping the selected list row and applying the
+    /// configured mark-read rule for the message that was just read.
+    pub fn close_reading(&mut self) {
+        self.reading = None;
+        self.leave_reading(None);
+    }
+
     /// Mark a message read (when it's there and isn't yet).
     pub(super) fn mark_seen(&mut self, key: &MessageKey) {
         if key.folder != OUTBOX && self.summary(key).is_some_and(|m| !m.flags.seen) {

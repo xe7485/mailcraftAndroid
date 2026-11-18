@@ -7,7 +7,7 @@
 use super::*;
 
 pub(super) fn add_account(ui: &mut Ui, f: &mut AccountForm, s: &Session, t: &Tokens, acts: &mut Vec<Action>) -> bool {
-    ui.set_width(440.0);
+    ui.set_width(ui.available_width().clamp(220.0, 440.0));
     title(ui, t, "Add an email account");
     if s.jmap_only {
         // The browser: JMAP only, and its address is needed.
@@ -92,60 +92,88 @@ pub(super) fn add_account(ui: &mut Ui, f: &mut AccountForm, s: &Session, t: &Tok
 
 /// The address (its settings looked up and filled in once it's typed), the name and the password.
 fn basics(ui: &mut Ui, f: &mut AccountForm, s: &Session, acts: &mut Vec<Action>) {
-    egui::Grid::new("acct").num_columns(2).spacing(vec2(12.0, 8.0)).show(ui, |ui| {
+    let compact = ui.available_width() < 500.0;
+    let mut email_field = |ui: &mut Ui| {
+        let width = if compact { ui.available_width() } else { 300.0 };
+        ui.add_sized([width, 30.0], egui::TextEdit::singleline(&mut f.email).hint_text(tl!("you@example.com")))
+    };
+    let r = if compact {
         ui.label(tl!("Email address"));
-        let r = ui.add(egui::TextEdit::singleline(&mut f.email).hint_text(tl!("you@example.com")).min_size(vec2(300.0, 26.0)).desired_width(300.0));
-        if r.changed() && !f.servers_edited {
-            f.guess();
-            f.found_for = None;
-            f.found_source = None;
-        }
-        // Look the settings up once the address is typed (when the box is left).
-        let email = f.email.trim().to_ascii_lowercase();
-        if !s.jmap_only
-            && (r.lost_focus() || f.advanced)
-            && mailcraft_engine::model::addr::is_valid_email(&email)
-            && !s.discovered.contains_key(&email)
-        {
-            acts.push(Action::Run("account.discover", json!({"email": email})));
-        }
-        if !f.servers_edited
-            && f.found_for.as_deref() != Some(email.as_str())
-            && let Some(Some((Some(c), source))) = s.discovered.get(&email)
-        {
-            f.imap_host = c.imap.host.clone();
-            f.imap_port = c.imap.port.to_string();
-            f.imap_security = c.imap.security;
-            f.smtp_host = c.smtp.host.clone();
-            f.smtp_port = c.smtp.port.to_string();
-            f.smtp_security = c.smtp.security;
-            // The provider's POP server when it named one, else one named after the IMAP server.
-            match &c.pop {
-                Some(p) => {
-                    f.pop_host = p.host.clone();
-                    f.pop_port = p.port.to_string();
-                    f.pop_security = p.security;
-                }
-                None => f.guess_pop(),
+        email_field(ui)
+    } else {
+        ui.horizontal(|ui| {
+            ui.label(tl!("Email address"));
+            email_field(ui)
+        })
+        .inner
+    };
+    if r.changed() && !f.servers_edited {
+        f.guess();
+        f.found_for = None;
+        f.found_source = None;
+    }
+    // Look the settings up once the address is typed (when the box is left).
+    let email = f.email.trim().to_ascii_lowercase();
+    if !s.jmap_only && (r.lost_focus() || f.advanced) && mailcraft_engine::model::addr::is_valid_email(&email) && !s.discovered.contains_key(&email) {
+        acts.push(Action::Run("account.discover", json!({"email": email})));
+    }
+    if !f.servers_edited
+        && f.found_for.as_deref() != Some(email.as_str())
+        && let Some(Some((Some(c), source))) = s.discovered.get(&email)
+    {
+        f.imap_host = c.imap.host.clone();
+        f.imap_port = c.imap.port.to_string();
+        f.imap_security = c.imap.security;
+        f.smtp_host = c.smtp.host.clone();
+        f.smtp_port = c.smtp.port.to_string();
+        f.smtp_security = c.smtp.security;
+        // The provider's POP server when it named one, else one named after the IMAP server.
+        match &c.pop {
+            Some(p) => {
+                f.pop_host = p.host.clone();
+                f.pop_port = p.port.to_string();
+                f.pop_security = p.security;
             }
-            f.username = if c.username.eq_ignore_ascii_case(&email) { String::new() } else { c.username.clone() };
-            f.found_for = Some(email.clone());
-            f.found_source = Some(source.clone());
+            None => f.guess_pop(),
         }
-        ui.end_row();
-        ui.label(tl!("Your name"));
-        ui.add(egui::TextEdit::singleline(&mut f.name).hint_text(tl!("Shown on mail you send")).min_size(vec2(300.0, 26.0)).desired_width(300.0));
-        ui.end_row();
-        // Exchange signs in with Microsoft in the browser; so do Outlook.com, Hotmail and
-        // Live, which take no passwords from mail apps (when this copy can sign in there).
-        let browser_only = f.kind == AccountKind::Graph
-            || (f.kind.imap_or_pop() && mailcraft_engine::model::microsoft_consumer(&f.email) && s.oauth_available.iter().any(|p| p == "microsoft"));
-        if !browser_only {
-            ui.label(tl!("Password"));
-            ui.add(egui::TextEdit::singleline(&mut f.password).password(true).min_size(vec2(300.0, 26.0)).desired_width(300.0));
-            ui.end_row();
+        f.username = if c.username.eq_ignore_ascii_case(&email) { String::new() } else { c.username.clone() };
+        f.found_for = Some(email.clone());
+        f.found_source = Some(source.clone());
+    }
+
+    let name = tl!("Your name");
+    let name_hint = tl!("Shown on mail you send");
+    let name_field = |ui: &mut Ui, f: &mut AccountForm| {
+        ui.add_sized([if compact { ui.available_width() } else { 300.0 }, 30.0], egui::TextEdit::singleline(&mut f.name).hint_text(name_hint))
+    };
+    if compact {
+        ui.add_space(6.0);
+        ui.label(name);
+        name_field(ui, f);
+    } else {
+        ui.horizontal(|ui| {
+            ui.label(name);
+            name_field(ui, f);
+        });
+    }
+
+    // Exchange signs in with Microsoft in the browser; so do Outlook.com, Hotmail and
+    // Live, which take no passwords from mail apps (when this copy can sign in there).
+    let browser_only = f.kind == AccountKind::Graph
+        || (f.kind.imap_or_pop() && mailcraft_engine::model::microsoft_consumer(&f.email) && s.oauth_available.iter().any(|p| p == "microsoft"));
+    if !browser_only {
+        let password = tl!("Password");
+        if compact {
+            ui.add_space(6.0);
+            ui.label(password);
+            ui.add_sized([ui.available_width(), 30.0], egui::TextEdit::singleline(&mut f.password).password(true));
+        } else {
+            ui.horizontal(|ui| {
+                ui.label(password);
+                ui.add_sized([300.0, 30.0], egui::TextEdit::singleline(&mut f.password).password(true));
+            });
         }
-    });
+    }
 }
 
 /// The server settings, opened: the kind of server, what it is, then that kind's own rows.

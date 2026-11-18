@@ -92,6 +92,11 @@ pub(super) fn commands() -> Vec<CommandSpec> {
         .params(r#"{"folder": string, "on"?: bool, "account"?: string}"#)
         .when(has_account),
         CommandSpec::new("list.open", "Open message", "Message list", open_message).leaves_body().params(r#"{"key": "account:validity:uid:folder"}"#),
+        CommandSpec::new("list.close", "Close message detail", "Message list", |s, _| {
+            s.close_reading();
+            Ok(json!({"closed": true}))
+        })
+        .leaves_body(),
         CommandSpec::new("list.select", "Select", "Message list", select).leaves_body().params(r#"{"key": string, "add"?: bool}"#),
         CommandSpec::new("list.selectAll", "Select all", "Message list", select_all).leaves_body().key("Mod+A"),
         CommandSpec::new("list.selectRange", "Select to here", "Message list (Shift+click)", |s, v| {

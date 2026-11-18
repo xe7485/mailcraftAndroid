@@ -637,7 +637,9 @@ pub(crate) fn show(
     // (delete for good? save before closing?) is an alert, as wordcraft's save prompt is.
     let id = egui::Id::unique(("dialog", std::mem::discriminant(d)));
     let role = if d.is_alert() { egui::accesskit::Role::AlertDialog } else { egui::accesskit::Role::Dialog };
+    let max_width = (ctx.content_rect().width() - 40.0).max(240.0);
     let modal = egui::Modal::new(id).frame(frame).show(ctx, |ui| {
+        ui.set_max_width(max_width);
         ui.scope_builder(egui::UiBuilder::new().accessibility_role(role), |ui| {
             // As tall as it needs, up to the window: only then does it scroll.
             let keep = egui::ScrollArea::vertical()

@@ -1,6 +1,6 @@
 //! Small shared widgets: toolbar buttons, avatars, the welcome screen.
 
-use egui::{Color32, CornerRadius, Response, RichText, Sense, Stroke, Ui, vec2};
+use egui::{Align, Color32, CornerRadius, Layout, Response, RichText, Sense, Stroke, Ui, vec2};
 
 use crate::icons::{self, Icon};
 use crate::theme::{self, Tokens};
@@ -649,8 +649,19 @@ pub fn shorten(s: &str, max: usize) -> String {
 pub fn welcome(ui: &mut Ui, t: &Tokens, jmap_only: bool, acts: &mut Vec<Action>) {
     ui.vertical_centered(|ui| {
         ui.add_space((ui.available_height() * 0.18).max(20.0));
-        egui::Frame::new().fill(t.surface).stroke(Stroke::new(1.0, t.border)).corner_radius(CornerRadius::same(12)).inner_margin(egui::Margin::same(32)).show(ui, |ui| {
-            ui.set_max_width(460.0);
+        let narrow = ui.available_width() < 520.0;
+        let card_width = ui.available_width().min(524.0);
+        let inner_margin = if narrow { 16.0 } else { 32.0 };
+        let content_width = (card_width - 2.0 * inner_margin - 2.0).max(80.0);
+        ui.allocate_ui_with_layout(vec2(card_width, ui.available_height()), Layout::top_down(Align::Center), |ui| {
+        egui::Frame::new()
+            .fill(t.surface)
+            .stroke(Stroke::new(1.0, t.border))
+            .corner_radius(CornerRadius::same(12))
+                .inner_margin(egui::Margin::same(inner_margin as i8))
+            .show(ui, |ui| {
+                    ui.set_max_width(content_width);
+                    ui.set_width(content_width);
             ui.vertical_centered(|ui| {
                 let (r, _) = ui.allocate_exact_size(vec2(64.0, 64.0), Sense::hover());
                 ui.painter().rect_filled(r, 14.0, t.accent);
@@ -663,7 +674,10 @@ pub fn welcome(ui: &mut Ui, t: &Tokens, jmap_only: bool, acts: &mut Vec<Action>)
                 } else {
                     "Your mail, on your computer. Add any IMAP account: messages are kept on this device so they're fast to search and readable offline. Your password stays in the system keychain."
                 };
-                ui.label(RichText::new(tl!(about)).color(t.dim));
+                ui.add_sized(
+                            vec2(content_width, 0.0),
+                    egui::Label::new(RichText::new(tl!(about)).color(t.dim)).wrap_mode(egui::TextWrapMode::Wrap).halign(Align::Center),
+                );
                 ui.add_space(18.0);
                 if accent_button(ui, Icon::Plus, "Add an account", t, true).clicked() {
                     acts.push(Action::Dialog(Dialog::add_account()));
@@ -680,6 +694,7 @@ pub fn welcome(ui: &mut Ui, t: &Tokens, jmap_only: bool, acts: &mut Vec<Action>)
                     acts.push(Action::OpenDataFile);
                 }
             });
+        });
         });
     });
 }

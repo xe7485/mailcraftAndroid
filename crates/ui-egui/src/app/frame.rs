@@ -5,6 +5,7 @@ use crate::*;
 use super::ribbon::{RIBBON_H, RIBBON_H_CLASSIC, module_switch, module_switch_vertical};
 
 mod guard;
+mod phone;
 pub use guard::FramePart;
 pub(crate) use guard::{FrameGuard, guarded_window};
 
@@ -265,6 +266,7 @@ impl MailApp {
             return None;
         }
         self.apply_language(&ctx);
+        self.ui.phone_layout = self.services.phone_form_factor().unwrap_or(self.ui.phone_layout);
         motion::set_enabled(&ctx, self.session.prefs.animations);
         // Ctrl+Q is Mark as read, as Outlook's: egui's own Ctrl+Q closed the window too. On a
         // Mac, Cmd+Q quits, as every Mac app does.
@@ -325,6 +327,10 @@ impl MailApp {
     /// The main window's bars: the top bar and the ribbon (and the bars under them), or the File
     /// page's title bar; the status bar.
     fn chrome(&mut self, ui: &mut Ui, acts: &mut Vec<Action>) {
+        if self.ui.phone_layout {
+            self.phone_chrome(ui, acts);
+            return;
+        }
         let t = self.ui.tokens;
         // The File page has the window to itself, under the window's own title bar (as Outlook's).
         if self.ui.backstage.is_none() {
@@ -435,6 +441,8 @@ impl MailApp {
             egui::CentralPanel::default().frame(egui::Frame::new().fill(t.bg)).show(ui, |ui| {
                 widgets::welcome(ui, &t, self.session.jmap_only, acts);
             });
+        } else if self.ui.phone_layout {
+            self.phone_panes(ui, acts);
         } else {
             let module = self.session.module;
             // Right-to-left languages mirror the window: folders on the right, then the list,

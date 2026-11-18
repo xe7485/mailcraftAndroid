@@ -77,7 +77,7 @@ impl MailApp {
     }
 
     /// The search box on the top bar, `search_w` wide inside its edge; where it is.
-    fn top_search(&mut self, ui: &mut Ui, search_w: f32, acts: &mut Vec<Action>) -> egui::Rect {
+    pub(crate) fn top_search(&mut self, ui: &mut Ui, search_w: f32, acts: &mut Vec<Action>) -> egui::Rect {
         let t = self.ui.tokens;
         // On a plain bar the box needs its own edge to stand out.
         let edge = if t.bar == t.chrome { egui::Stroke::new(1.0, t.border) } else { egui::Stroke::NONE };
