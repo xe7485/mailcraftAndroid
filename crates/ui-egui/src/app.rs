@@ -47,7 +47,7 @@ pub struct MailApp {
 impl MailApp {
     pub fn new(session: Session, backend: Box<dyn Backend>, mut services: Box<dyn Services>) -> MailApp {
         let seen = session.notices.len();
-        let has_files = !services.downloads();
+        let has_files = services.has_files();
         let phone_layout = services.phone_form_factor().unwrap_or(false);
         let keeps_running = services.keeps_running();
         let (data_folder, pending_move) = (services.data_folder(), services.pending_data_move());

@@ -15,6 +15,36 @@ use serde_json::json;
 
 use crate::{Dialog, MailApp, NullBackend, NullServices};
 
+/// An app can offer both downloads and real local files (Android).
+struct FilesAlongsideDownloads;
+
+impl crate::Services for FilesAlongsideDownloads {
+    fn clock(&self) -> (i64, i32) {
+        (NOW, 0)
+    }
+    fn pick_files(&mut self) -> Vec<std::path::PathBuf> {
+        Vec::new()
+    }
+    fn save_path(&mut self, _: &str) -> Option<std::path::PathBuf> {
+        None
+    }
+    fn open_path(&mut self, _: &std::path::Path) -> Result<(), String> {
+        Ok(())
+    }
+    fn downloads(&self) -> bool {
+        true
+    }
+    fn has_files(&self) -> bool {
+        true
+    }
+}
+
+#[test]
+fn an_app_with_downloads_can_still_use_local_files() {
+    let app = MailApp::new(Session::blank(), Box::new(NullBackend), Box::new(FilesAlongsideDownloads));
+    assert!(app.ui.has_files);
+}
+
 const NOW: i64 = 1_791_979_200;
 
 /// The methods [`crate::Services`] requires, as a test's services that don't vary them have
