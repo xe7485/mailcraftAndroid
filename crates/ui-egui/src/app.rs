@@ -299,6 +299,7 @@ impl MailApp {
             match purpose {
                 Picked::AttachPath => attachment_paths.push(name),
                 Picked::AttachPaths(paths) => attachment_paths.extend(paths),
+                Picked::SignatureFile => self.signature_file_picked(&name, &data, None),
                 Picked::Certificate(account) => {
                     self.ui.dialog = Some(Dialog::Certificate { account, path: name, data: Some(data), password: String::new() });
                 }

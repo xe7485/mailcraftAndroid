@@ -468,6 +468,7 @@ impl Services for AndroidServices {
             mailcraft_ui_egui::Picked::Attach => "attach".to_string(),
             mailcraft_ui_egui::Picked::AttachPath => "attach".to_string(),
             mailcraft_ui_egui::Picked::AttachPaths(_) => "attach".to_string(),
+            mailcraft_ui_egui::Picked::SignatureFile => "signature".to_string(),
             mailcraft_ui_egui::Picked::Picture => "picture".to_string(),
             mailcraft_ui_egui::Picked::Backup => "backup".to_string(),
             mailcraft_ui_egui::Picked::Rules => "rules".to_string(),
@@ -493,11 +494,16 @@ impl Services for AndroidServices {
             });
         }
         let pick_image = matches!(purpose.as_str(), "picture" | "signature-picture");
+        let mime_type = if pick_image {
+            "image/*"
+        } else if purpose == "signature" {
+            "text/html"
+        } else {
+            "*/*"
+        };
         let request_id = activity::next_document_request_id();
         self.active_document_picker = Some((request_id, purpose.clone()));
-        if let Err(error) =
-            activity::open_document_picker(&self.activity, request_id, if pick_image { "image/*" } else { "*/*" }, purpose == "attach")
-        {
+        if let Err(error) = activity::open_document_picker(&self.activity, request_id, mime_type, purpose == "attach") {
             self.active_document_picker = None;
             clear_picker_purpose(&self.pending_picker_purpose, &purpose);
             log::warn!("Android document picker could not start: {error}");
@@ -543,6 +549,7 @@ impl Services for AndroidServices {
                         return Some((mailcraft_ui_egui::Picked::AttachPaths(paths), String::new(), Vec::new()));
                     }
                     "picture" => mailcraft_ui_egui::Picked::Picture,
+                    "signature" => mailcraft_ui_egui::Picked::SignatureFile,
                     "backup" => mailcraft_ui_egui::Picked::Backup,
                     "rules" => mailcraft_ui_egui::Picked::Rules,
                     "categories" => mailcraft_ui_egui::Picked::Categories,

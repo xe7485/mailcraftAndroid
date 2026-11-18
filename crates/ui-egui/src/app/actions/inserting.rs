@@ -135,6 +135,9 @@ impl MailApp {
         if !matches!(self.ui.dialog, Some(Dialog::Signature(_))) {
             return;
         }
+        if self.services.pick_later(&crate::Picked::SignatureFile) {
+            return;
+        }
         let Some(path) = self.services.pick_files().into_iter().next() else { return };
         let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
         let read = read_capped(&path, mime::SIGNATURE_CODE_MAX as u64 + 1);
@@ -146,8 +149,20 @@ impl MailApp {
             }
         };
         let folder = path.parent().and_then(|p| p.canonicalize().ok());
-        let html = mime::local_pictures(&mime::pictures_beside(&mime::signature_file(&bytes)), |src| {
-            let folder = folder.as_ref()?;
+        self.signature_file_picked(&name, &bytes, folder.as_deref());
+    }
+
+    pub(crate) fn signature_file_picked(&mut self, name: &str, bytes: &[u8], folder: Option<&std::path::Path>) {
+        use mailcraft_engine::mime;
+        if !matches!(self.ui.dialog, Some(Dialog::Signature(_))) {
+            return;
+        }
+        if bytes.len() > mime::SIGNATURE_CODE_MAX {
+            self.session.notice(tf!("{name} can't be read as a signature", name = name), true);
+            return;
+        }
+        let html = mime::local_pictures(&mime::pictures_beside(&mime::signature_file(bytes)), |src| {
+            let folder = folder?;
             let rel = percent_decoded(src.trim().get(5..)?);
             let file = folder.join(rel.trim_start_matches(['/', '\\'])).canonicalize().ok()?;
             let meta = std::fs::metadata(&file).ok()?;

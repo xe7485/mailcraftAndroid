@@ -394,6 +394,7 @@ impl Services for WebServices {
             Picked::DataFile | Picked::AccountDataFile | Picked::AttachPath | Picked::AttachPaths(_) => return false,
             Picked::Backup => rfd::AsyncFileDialog::new().add_filter("MailCraft backup", &["mailcraft-backup"]),
             Picked::Rules | Picked::Categories => rfd::AsyncFileDialog::new().add_filter("MailCraft file", &["json"]),
+            Picked::SignatureFile => rfd::AsyncFileDialog::new().add_filter("HTML signature", &["htm", "html"]),
             Picked::Picture => rfd::AsyncFileDialog::new().add_filter("Pictures", &["png", "jpg", "jpeg", "gif", "webp", "bmp"]),
             Picked::Certificate(_) => rfd::AsyncFileDialog::new().add_filter("Certificate with its key", &["p12", "pfx"]),
             Picked::Attach => rfd::AsyncFileDialog::new(),

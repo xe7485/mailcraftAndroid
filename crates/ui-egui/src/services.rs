@@ -122,6 +122,8 @@ pub enum Picked {
     AttachPath,
     /// Several private files staged together by a native multi-select picker.
     AttachPaths(Vec<String>),
+    /// HTML code to put in the signature being edited.
+    SignatureFile,
     /// Put in the message being written, at its cursor.
     Picture,
     /// A backup to bring back (issue #83).
