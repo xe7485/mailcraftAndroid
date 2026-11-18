@@ -3,7 +3,76 @@
 
 use crate::*;
 
+const MAX_SHARE_ATTACHMENTS: usize = 50;
+const MAX_SHARE_ATTACHMENT_BYTES: usize = 25 << 20;
+
 impl MailApp {
+    /// The open message's original source handed to the system share sheet.
+    pub(super) fn share_message(&mut self) {
+        if !self.services.can_share_files() {
+            return;
+        }
+        let name = format!("{}.eml", self.message_file_name());
+        match self.session.message_source() {
+            Ok(bytes) => {
+                if let Err(error) = self.services.share_message(&name, "message/rfc822", &bytes) {
+                    self.session.notice(error, true);
+                }
+            }
+            Err(error) => self.session.notice(error.to_string(), true),
+        }
+    }
+
+    /// One or more open message attachments handed to the system share sheet.
+    pub(super) fn share_attachments(&mut self, indices: Vec<usize>) {
+        if !self.services.can_share_files() || indices.is_empty() {
+            return;
+        }
+        if indices.len() > MAX_SHARE_ATTACHMENTS {
+            self.session.notice(tf!("You can share up to {n} attachments at once", n = MAX_SHARE_ATTACHMENTS), true);
+            return;
+        }
+        let Some(parsed) = self.session.reading.as_ref().and_then(|reading| reading.parsed.as_ref()) else { return };
+        let mut metadata = Vec::with_capacity(indices.len());
+        let mut total_size = 0usize;
+        for index in indices {
+            let Some(info) = parsed.attachments.iter().find(|attachment| attachment.index == index) else { return };
+            let size = usize::try_from(info.size).unwrap_or(usize::MAX);
+            total_size = total_size.saturating_add(size);
+            metadata.push((index, info.name.clone(), info.mime.clone()));
+        }
+        if total_size > MAX_SHARE_ATTACHMENT_BYTES {
+            self.session.notice(tl!("The selected attachments are too large to share"), true);
+            return;
+        }
+        let mut owned = Vec::with_capacity(metadata.len());
+        let mut actual_size = 0usize;
+        for (index, name, mime) in metadata {
+            match self.session.attachment_bytes(index) {
+                Ok(bytes) => {
+                    actual_size = actual_size.saturating_add(bytes.len());
+                    if actual_size > MAX_SHARE_ATTACHMENT_BYTES {
+                        self.session.notice(tl!("The selected attachments are too large to share"), true);
+                        return;
+                    }
+                    owned.push((name, mime, bytes));
+                }
+                Err(error) => {
+                    self.session.notice(error.to_string(), true);
+                    return;
+                }
+            }
+        }
+        let files: Vec<(&str, &str, &[u8])> = owned.iter().map(|(name, mime, bytes)| (name.as_str(), mime.as_str(), bytes.as_slice())).collect();
+        let result = match files.as_slice() {
+            [(name, mime, bytes)] => self.services.share_file(name, mime, bytes),
+            _ => self.services.share_files(&files),
+        };
+        if let Err(error) = result {
+            self.session.notice(error, true);
+        }
+    }
+
     /// The message as a PDF, saved where asked, then opened to print from the viewer (in the
     /// browser, downloaded).
     pub(super) fn print(&mut self) {

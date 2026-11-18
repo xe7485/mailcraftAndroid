@@ -274,6 +274,8 @@ pub struct UiState {
     pub can_share_calendar_events: bool,
     pub can_export_calendar_events: bool,
     pub can_add_to_system_calendar: bool,
+    /// The platform can share messages and files with its other apps.
+    pub can_share_files: bool,
     /// The platform can hand phone numbers and postal addresses to its own apps.
     pub can_dial_phone: bool,
     pub can_open_map: bool,

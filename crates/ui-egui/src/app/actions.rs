@@ -62,6 +62,10 @@ pub enum Action {
     /// Hand a phone number or postal address to the platform.
     DialPhone(String),
     OpenMap(String),
+    /// Hand an open message or one or more attachments to the platform share sheet.
+    ShareMessage,
+    ShareAttachment(usize),
+    ShareAttachments(Vec<usize>),
     /// Search every folder for this (shown in the box, with the Search tab).
     Search(String),
     SetDark(Option<bool>),
@@ -344,6 +348,9 @@ impl MailApp {
             Action::AddEventToSystemCalendar(uid) => self.add_event_to_system_calendar(&uid),
             Action::DialPhone(number) => self.dial_phone(&number),
             Action::OpenMap(address) => self.open_map(&address),
+            Action::ShareMessage => self.share_message(),
+            Action::ShareAttachment(index) => self.share_attachments(vec![index]),
+            Action::ShareAttachments(indices) => self.share_attachments(indices),
             // Into the message being written or the signature being edited (`actions/inserting.rs`).
             Action::EditSignature { account, insert } => {
                 self.ui.dialog = Some(Dialog::Signature(Box::new(dialogs::SignatureForm::new(&self.session, &account, insert))));

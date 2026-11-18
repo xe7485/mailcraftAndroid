@@ -308,6 +308,10 @@ fn action_bar(s: &Session, st: &UiState, ui: &mut Ui, o: &Open<'_>, acts: &mut V
             // More, as Outlook's ⋯ beside Forward.
             let more = widgets::more_pill(ui, "More actions", &t);
             egui::Popup::menu(&more).show(|ui| {
+                if st.can_share_files && ui.button(tl!("Share message")).clicked() {
+                    acts.push(Action::ShareMessage);
+                    ui.close();
+                }
                 if ui.button(tl!("Reply with meeting")).clicked() {
                     acts.push(Action::Dialog(crate::Dialog::meeting_from(s, p)));
                     ui.close();

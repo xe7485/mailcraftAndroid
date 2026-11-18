@@ -180,6 +180,17 @@ pub(super) fn attachment_card(
             acts.push(Action::Run("pgp.importAttached", json!({"index": a.index})));
             ui.close();
         }
+        if st.can_share_files && ui.button(tl!("Share")).clicked() {
+            acts.push(Action::ShareAttachment(a.index));
+            ui.close();
+        }
+        if st.can_share_files
+            && let Some(v) = &several
+            && ui.button(tl!("Share Selected…")).clicked()
+        {
+            acts.push(Action::ShareAttachments(v.clone()));
+            ui.close();
+        }
         ui.separator();
         if ui.button(tl!("Save As…")).clicked() {
             acts.push(Action::SaveAttachment(a.index));
