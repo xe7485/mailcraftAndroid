@@ -6,7 +6,7 @@ use mailcraft_engine::model::FolderRole;
 
 use super::*;
 
-pub(super) fn inbox(s: &Session, t: &Tokens, ui: &mut Ui, acts: &mut Vec<Action>) {
+pub(super) fn inbox(s: &Session, st: &UiState, t: &Tokens, ui: &mut Ui, acts: &mut Vec<Action>) {
     card(ui, t, tl!("Inbox and notifications"), None, |ui| {
         let switches = [
             (tl!("Show a desktop notification when new mail arrives"), None, s.prefs.notify, "view.notifications"),
@@ -20,6 +20,13 @@ pub(super) fn inbox(s: &Session, t: &Tokens, ui: &mut Ui, acts: &mut Vec<Action>
         ];
         for (i, (label, about, on, cmd)) in switches.into_iter().enumerate() {
             switch_row(ui, t, i == 0, Switch { label, about, on, cmd }, acts);
+        }
+        if st.can_open_notification_settings {
+            setting(ui, t, false, tl!("Notification settings"), None, |ui| {
+                if ui.button(tl!("Open")).clicked() {
+                    acts.push(Action::OpenNotificationSettings);
+                }
+            });
         }
         answered_invites(s, t, ui, acts);
         let switches = [

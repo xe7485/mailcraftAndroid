@@ -276,6 +276,8 @@ pub struct UiState {
     pub can_add_to_system_calendar: bool,
     /// The platform can share messages and files with its other apps.
     pub can_share_files: bool,
+    /// The platform can open its notification settings for MailCraft.
+    pub can_open_notification_settings: bool,
     /// The platform can hand phone numbers and postal addresses to its own apps.
     pub can_dial_phone: bool,
     pub can_open_map: bool,

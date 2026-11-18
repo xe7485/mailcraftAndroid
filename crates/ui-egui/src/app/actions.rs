@@ -66,6 +66,7 @@ pub enum Action {
     ShareMessage,
     ShareAttachment(usize),
     ShareAttachments(Vec<usize>),
+    OpenNotificationSettings,
     /// Search every folder for this (shown in the box, with the Search tab).
     Search(String),
     SetDark(Option<bool>),
@@ -351,6 +352,13 @@ impl MailApp {
             Action::ShareMessage => self.share_message(),
             Action::ShareAttachment(index) => self.share_attachments(vec![index]),
             Action::ShareAttachments(indices) => self.share_attachments(indices),
+            Action::OpenNotificationSettings => {
+                if self.services.can_open_notification_settings()
+                    && let Err(error) = self.services.open_notification_settings()
+                {
+                    self.session.notice(error, true);
+                }
+            }
             // Into the message being written or the signature being edited (`actions/inserting.rs`).
             Action::EditSignature { account, insert } => {
                 self.ui.dialog = Some(Dialog::Signature(Box::new(dialogs::SignatureForm::new(&self.session, &account, insert))));

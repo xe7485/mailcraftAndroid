@@ -19,7 +19,7 @@ pub(super) fn options(s: &Session, st: &UiState, ui: &mut Ui, acts: &mut Vec<Act
     mail::reading(s, &t, ui, acts);
     mail::kept(s, &t, ui, acts);
     mail::checking(s, &t, ui, acts);
-    inbox::inbox(s, &t, ui, acts);
+    inbox::inbox(s, st, &t, ui, acts);
     super::meetings::meetings(s, st, ui, acts);
     safety::senders(s, &t, ui, acts);
     safety::safety(s, &t, ui, acts);
