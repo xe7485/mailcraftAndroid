@@ -35,6 +35,7 @@ pub(crate) fn picker_file_limit(purpose: &str, name: &str, mime_type: &str) -> R
             purpose if purpose.starts_with("pgp-secret:") => 1 << 20,
             purpose if purpose.starts_with("pgp-public:") => 8 << 20,
             purpose if purpose.starts_with("certificate:") => 1 << 20,
+            purpose if purpose.starts_with("server-certificate:") => 64 << 10,
             "signature-picture" => mailcraft_engine::mime::SIGNATURE_PICTURE_MAX as u64,
             "signature" => mailcraft_engine::mime::SIGNATURE_CODE_MAX as u64,
             _ => mailcraft_engine::MAX_MAIL_FILE_BYTES,

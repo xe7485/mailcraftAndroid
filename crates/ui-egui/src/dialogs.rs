@@ -183,6 +183,7 @@ pub enum Dialog {
     PgpKey {
         account: String,
         path: String,
+        handed: Option<u64>,
         passphrase: String,
     },
     /// A certificate on a smart card (its PKCS #11 module and PIN), or (`system`) in the system's

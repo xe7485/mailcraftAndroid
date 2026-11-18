@@ -10,8 +10,14 @@ fn show(i: &mailcraft_pgp::KeyInfo) -> Value {
     })
 }
 
-/// A file's bytes given as `data` (the browser's picker), else read from `path`.
-fn file(v: &Value, max: usize) -> Result<Vec<u8>, CmdError> {
+/// A file's bytes handed over once by the window, given as `data` (the browser's picker), or read from `path`.
+fn file(s: &mut Session, v: &Value, max: usize) -> Result<Vec<u8>, CmdError> {
+    if let Some(data) = s.take_handed(v)? {
+        if data.len() > max {
+            return Err(CmdError::Failed(format!("the key file is limited to {} MB", max >> 20)));
+        }
+        return Ok(data);
+    }
     if let Some(data) = p::bytes(v, "data", max)? {
         return Ok(data);
     }
@@ -24,10 +30,10 @@ pub(super) fn commands() -> Vec<CommandSpec> {
         CommandSpec::new("pgp.import", "Import OpenPGP key", "File › Info › Security", |s, v| {
             let account = account_param(s, v)?;
             let passphrase = p::str(v, "passphrase").unwrap_or_default().to_string();
-            let data = file(v, 1 << 20)?;
+            let data = file(s, v, 1 << 20)?;
             s.import_pgp_key_data(&account, data, &passphrase)
         })
-        .params(r#"{"path": string (a secret key file: .asc, .gpg, .key), "data"?: [bytes] (the file itself, in place of path), "passphrase"?: string, "account"?: string}"#),
+        .params(r#"{"path": string (a secret key file: .asc, .gpg, .key), "data"?: [bytes] or "handed"?: number (the file itself, in place of path), "passphrase"?: string, "account"?: string}"#),
         CommandSpec::new("pgp.keys", "OpenPGP keys", "File › Info › Security", |s, v| {
             let account = account_param(s, v)?;
             let settings = s.pgp_settings(&account);
@@ -56,10 +62,10 @@ pub(super) fn commands() -> Vec<CommandSpec> {
         .params(r#"{"autocrypt"?: bool (send the account's public key with its mail, so answers can be encrypted), "account"?: string}"#),
         CommandSpec::new("pgp.importPublic", "Import someone's key", "File › Info › Security", |s, v| {
             let account = account_param(s, v)?;
-            let data = file(v, 8 << 20)?;
+            let data = file(s, v, 8 << 20)?;
             s.import_public_keys_data(&account, &data)
         })
-        .params(r#"{"path": string (a public key file, armored or binary, one key or many), "data"?: [bytes], "account"?: string}"#),
+        .params(r#"{"path": string (a public key file, armored or binary, one key or many), "data"?: [bytes] or "handed"?: number (the file itself, in place of path), "account"?: string}"#),
         CommandSpec::new("pgp.importAttached", "Import key", "Reading pane › Attachments", |s, v| {
             let index = p::u64(v, "index").ok_or_else(|| CmdError::Params("`index`: which attachment".into()))?;
             let data = s.attachment_bytes(usize::try_from(index).unwrap_or(usize::MAX))?;

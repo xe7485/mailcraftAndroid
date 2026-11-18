@@ -18,6 +18,9 @@ impl MailApp {
     /// A certificate file picked for an account's mail servers to trust (issue #105): an
     /// authority the organisation runs, or a server's own.
     pub(super) fn trust_certificate_file(&mut self, account: String) {
+        if self.services.pick_later(&crate::Picked::ServerCertificate(account.clone())) {
+            return;
+        }
         if let Some(path) = self.services.pick_server_certificate() {
             match self.session.run("account.trustCertificateFile", &json!({"account": account, "path": path.to_string_lossy()})) {
                 Ok(_) => self.session.notice(tl!("The certificate is trusted for this account").to_string(), false),
@@ -27,12 +30,18 @@ impl MailApp {
     }
 
     pub(super) fn import_pgp_key(&mut self, account: String) {
+        if self.services.pick_later(&crate::Picked::PgpSecret(account.clone())) {
+            return;
+        }
         if let Some(path) = self.services.pick_pgp_key() {
-            self.ui.dialog = Some(Dialog::PgpKey { account, path: path.to_string_lossy().into_owned(), passphrase: String::new() });
+            self.ui.dialog = Some(Dialog::PgpKey { account, path: path.to_string_lossy().into_owned(), handed: None, passphrase: String::new() });
         }
     }
 
     pub(super) fn import_public_key(&mut self, account: &str) {
+        if self.services.pick_later(&crate::Picked::PgpPublic(account.to_string())) {
+            return;
+        }
         if let Some(path) = self.services.pick_pgp_key() {
             // The session says what it kept.
             if let Err(e) = self.session.run("pgp.importPublic", &json!({"account": account, "path": path.to_string_lossy()})) {

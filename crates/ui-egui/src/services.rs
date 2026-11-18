@@ -136,6 +136,12 @@ pub enum Picked {
     Categories,
     /// An account's certificate with its key (`.p12` / `.pfx`), by the account's id.
     Certificate(String),
+    /// A server certificate to trust for an account.
+    ServerCertificate(String),
+    /// An account's OpenPGP secret key.
+    PgpSecret(String),
+    /// Correspondents' OpenPGP public keys for an account.
+    PgpPublic(String),
     /// A file to open in MailCraft.
     DataFile,
     /// A data file to use when adding an account.

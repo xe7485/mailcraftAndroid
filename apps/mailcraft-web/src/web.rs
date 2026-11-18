@@ -398,6 +398,9 @@ impl Services for WebServices {
             Picked::SignaturePicture => rfd::AsyncFileDialog::new().add_filter("Pictures", &["png", "jpg", "jpeg", "gif", "webp"]),
             Picked::Picture => rfd::AsyncFileDialog::new().add_filter("Pictures", &["png", "jpg", "jpeg", "gif", "webp", "bmp"]),
             Picked::Certificate(_) => rfd::AsyncFileDialog::new().add_filter("Certificate with its key", &["p12", "pfx"]),
+            Picked::ServerCertificate(_) => rfd::AsyncFileDialog::new().add_filter("Server certificate", &["pem", "crt", "cer"]),
+            Picked::PgpSecret(_) => rfd::AsyncFileDialog::new().add_filter("OpenPGP secret key", &["asc", "gpg", "key"]),
+            Picked::PgpPublic(_) => rfd::AsyncFileDialog::new().add_filter("OpenPGP public key", &["asc", "gpg", "key"]),
             Picked::Attach => rfd::AsyncFileDialog::new(),
         };
         wasm_bindgen_futures::spawn_local(async move {

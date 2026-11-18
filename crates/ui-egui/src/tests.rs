@@ -499,7 +499,7 @@ pub(crate) fn tour() {
             Dialog::Certificate { account: "sample".into(), path: String::new(), data: None, password: String::new() },
             Dialog::Backup(Default::default()),
             Dialog::Restore(crate::dialogs::RestoreForm { name: "MailCraft backup 2026-11-13.mailcraft-backup".into(), ..Default::default() }),
-            Dialog::PgpKey { account: "sample".into(), path: "ana-secret.asc".into(), passphrase: String::new() },
+            Dialog::PgpKey { account: "sample".into(), path: "ana-secret.asc".into(), handed: None, passphrase: String::new() },
             Dialog::SmartCard { account: "sample".into(), module: "/usr/lib/opensc-pkcs11.so".into(), pin: "1234".into(), system: false },
             Dialog::SmartCard { account: "sample".into(), module: String::new(), pin: String::new(), system: true },
             Dialog::new_folder("sample", Some("Projects")),

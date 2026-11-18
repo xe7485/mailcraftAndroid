@@ -45,6 +45,15 @@ fn with_key(name: &str) -> Session {
     s
 }
 
+#[test]
+fn handed_secret_key_bytes_are_consumed_once() {
+    let mut s = session("handed-secret-key");
+    let handed = s.hand(pgpdata("riley-secret.asc"));
+    s.run("pgp.import", &json!({"handed": handed, "account": "sample"})).unwrap();
+    assert!(s.run("pgp.import", &json!({"handed": handed, "account": "sample"})).is_err());
+    assert!(s.handed.is_empty());
+}
+
 /// Ana's mail: `body` (a MIME entity's header and body), from her, with her key in an
 /// `Autocrypt:` header when `autocrypt`.
 fn from_ana(autocrypt: bool, content_type: &str, body: &str) -> Vec<u8> {

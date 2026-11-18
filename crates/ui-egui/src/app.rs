@@ -304,6 +304,22 @@ impl MailApp {
                 Picked::Certificate(account) => {
                     self.ui.dialog = Some(Dialog::Certificate { account, path: name, data: Some(data), password: String::new() });
                 }
+                Picked::ServerCertificate(account) => {
+                    match self.session.run("account.trustCertificateFile", &json!({"account": account, "data": data})) {
+                        Ok(_) => self.session.notice(tl!("The certificate is trusted for this account").to_string(), false),
+                        Err(e) => self.session.notice(e.to_string(), true),
+                    }
+                }
+                Picked::PgpSecret(account) => {
+                    let handed = self.session.hand(data);
+                    self.ui.dialog = Some(Dialog::PgpKey { account, path: name, handed: Some(handed), passphrase: String::new() });
+                }
+                Picked::PgpPublic(account) => {
+                    let handed = self.session.hand(data);
+                    if let Err(e) = self.session.run("pgp.importPublic", &json!({"account": account, "handed": handed})) {
+                        self.session.notice(e.to_string(), true);
+                    }
+                }
                 Picked::AccountDataFile => {
                     if let Some(Dialog::AddAccount(form)) = self.ui.dialog.as_mut() {
                         form.pst = name;

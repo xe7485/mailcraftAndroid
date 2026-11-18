@@ -475,6 +475,9 @@ impl Services for AndroidServices {
             mailcraft_ui_egui::Picked::Rules => "rules".to_string(),
             mailcraft_ui_egui::Picked::Categories => "categories".to_string(),
             mailcraft_ui_egui::Picked::Certificate(account) => format!("certificate:{account}"),
+            mailcraft_ui_egui::Picked::ServerCertificate(account) => format!("server-certificate:{account}"),
+            mailcraft_ui_egui::Picked::PgpSecret(account) => format!("pgp-secret:{account}"),
+            mailcraft_ui_egui::Picked::PgpPublic(account) => format!("pgp-public:{account}"),
             mailcraft_ui_egui::Picked::DataFile => "open-file".to_string(),
             mailcraft_ui_egui::Picked::AccountDataFile => "account-data-file".to_string(),
         };
@@ -560,6 +563,11 @@ impl Services for AndroidServices {
                     certificate if certificate.starts_with("certificate:") => {
                         mailcraft_ui_egui::Picked::Certificate(certificate["certificate:".len()..].to_string())
                     }
+                    certificate if certificate.starts_with("server-certificate:") => {
+                        mailcraft_ui_egui::Picked::ServerCertificate(certificate["server-certificate:".len()..].to_string())
+                    }
+                    key if key.starts_with("pgp-secret:") => mailcraft_ui_egui::Picked::PgpSecret(key["pgp-secret:".len()..].to_string()),
+                    key if key.starts_with("pgp-public:") => mailcraft_ui_egui::Picked::PgpPublic(key["pgp-public:".len()..].to_string()),
                     _ => {
                         self.discard_picked_file(std::path::Path::new(&name));
                         return None;

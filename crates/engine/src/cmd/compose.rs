@@ -207,6 +207,11 @@ impl Session {
             self.handed.retain(|(k, _)| *k != n);
         }
     }
+
+    /// Drop a privately handed file when the UI action that requested it is cancelled.
+    pub fn discard_handed(&mut self, id: u64) {
+        self.handed.retain(|(k, _)| *k != id);
+    }
 }
 
 /// A file from `path`, or `name` and the bytes handed over (`handed`) or given (`data`), at most

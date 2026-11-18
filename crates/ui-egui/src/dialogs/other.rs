@@ -124,7 +124,7 @@ pub(super) fn draw(ui: &mut Ui, d: &mut Dialog, s: &Session, pics: &mut crate::r
             }
             !cancel
         }
-        Dialog::PgpKey { account, path, passphrase } => {
+        Dialog::PgpKey { account, path, handed, passphrase } => {
             ui.set_width(420.0);
             title(ui, t, "Import OpenPGP key");
             let file = mailcraft_engine::model::file_name(path);
@@ -147,7 +147,11 @@ pub(super) fn draw(ui: &mut Ui, d: &mut Dialog, s: &Session, pics: &mut crate::r
             );
             let (ok, cancel) = buttons(ui, t, "Import", true);
             if ok || enter {
-                acts.push(Action::Run("pgp.import", json!({"account": account, "path": path, "passphrase": passphrase})));
+                let params = match handed {
+                    Some(id) => json!({"account": account, "handed": id, "passphrase": passphrase}),
+                    None => json!({"account": account, "path": path, "passphrase": passphrase}),
+                };
+                acts.push(Action::Run("pgp.import", params));
                 return false;
             }
             !cancel

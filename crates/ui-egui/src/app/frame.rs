@@ -595,6 +595,13 @@ impl MailApp {
                 let keep = dialogs::show(&ctx, &mut d, &self.session, &mut self.ui.pictures, &t, &mut acts);
                 if keep && self.ui.dialog.is_none() {
                     self.ui.dialog = Some(d);
+                } else if !keep
+                    && let Dialog::PgpKey { handed: Some(id), .. } = d
+                    && !acts
+                        .iter()
+                        .any(|a| matches!(a, Action::Run("pgp.import", params) if params.get("handed").and_then(Value::as_u64) == Some(id)))
+                {
+                    self.session.discard_handed(id);
                 }
             }
         }
