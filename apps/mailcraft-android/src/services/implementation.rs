@@ -92,11 +92,28 @@ impl AndroidServices {
                 return;
             }
             let staged_file = matches!(worker_purpose.as_str(), "data-file" | "open-file" | "account-data-file" | "attach");
-            let purpose_for_ui = if worker_purpose == "attach" {
-                if is_batch { "attach-path-batch" } else { "attach-path" }.to_owned()
-            } else {
-                worker_purpose.clone()
-            };
+            if is_batch && worker_purpose == "attach" {
+                let paths: Vec<_> = staged.iter().map(|(path, _)| path.clone()).collect();
+                match serde_json::to_vec(&paths) {
+                    Ok(data) => {
+                        if worker_picked.send(("attach-path-batch".to_owned(), String::new(), data)).is_err() {
+                            for path in paths {
+                                discard_staged_android_file(std::path::Path::new(&path));
+                            }
+                        }
+                    }
+                    Err(error) => {
+                        for path in paths {
+                            discard_staged_android_file(std::path::Path::new(&path));
+                        }
+                        let _ = worker_errors.send(error.to_string());
+                    }
+                }
+                clear_picker_purpose(&worker_pending, &worker_purpose);
+                worker_repaint.request_repaint();
+                return;
+            }
+            let purpose_for_ui = if worker_purpose == "attach" { "attach-path".to_owned() } else { worker_purpose.clone() };
             let mut staged_iter = staged.into_iter();
             while let Some((name_or_path, data)) = staged_iter.next() {
                 if worker_picked.send((purpose_for_ui.clone(), name_or_path.clone(), data)).is_err() {
@@ -449,6 +466,8 @@ impl Services for AndroidServices {
     fn pick_later(&mut self, purpose: &mailcraft_ui_egui::Picked) -> bool {
         let purpose = match purpose {
             mailcraft_ui_egui::Picked::Attach => "attach".to_string(),
+            mailcraft_ui_egui::Picked::AttachPath => "attach".to_string(),
+            mailcraft_ui_egui::Picked::AttachPaths(_) => "attach".to_string(),
             mailcraft_ui_egui::Picked::Picture => "picture".to_string(),
             mailcraft_ui_egui::Picked::Backup => "backup".to_string(),
             mailcraft_ui_egui::Picked::Rules => "rules".to_string(),
@@ -492,11 +511,15 @@ impl Services for AndroidServices {
         self.process_document_results();
         let picked: Vec<_> = self.picked_rx.try_iter().collect();
         for (purpose, name, _) in &picked {
+            let request_purpose = match purpose.as_str() {
+                "attach-path" | "attach-path-batch" => "attach",
+                purpose => purpose,
+            };
             let pending = lock_picker_purpose(&self.pending_picker_purpose);
-            let shared_batch_open = pending.as_ref().is_some_and(|pending| pending.purpose == *purpose && pending.shared_batch_open);
+            let shared_batch_open = pending.as_ref().is_some_and(|pending| pending.purpose == request_purpose && pending.shared_batch_open);
             drop(pending);
             if !shared_batch_open {
-                clear_picker_purpose(&self.pending_picker_purpose, purpose);
+                clear_picker_purpose(&self.pending_picker_purpose, request_purpose);
             }
             let extension = std::path::Path::new(name).extension().and_then(std::ffi::OsStr::to_str).map(str::to_ascii_lowercase).unwrap_or_default();
             if purpose == "account-data-file" || (purpose == "open-file" && matches!(extension.as_str(), "pst" | "mailcraft" | "msg")) {
@@ -508,6 +531,17 @@ impl Services for AndroidServices {
             .filter_map(|(purpose, name, bytes)| {
                 let purpose = match purpose.as_str() {
                     "attach" => mailcraft_ui_egui::Picked::Attach,
+                    "attach-path" => mailcraft_ui_egui::Picked::AttachPath,
+                    "attach-path-batch" => {
+                        let paths = match serde_json::from_slice::<Vec<String>>(&bytes) {
+                            Ok(paths) if !paths.is_empty() && paths.len() <= 50 => paths,
+                            _ => {
+                                let _ = self.errors.send("The selected attachments couldn't be read".into());
+                                return None;
+                            }
+                        };
+                        return Some((mailcraft_ui_egui::Picked::AttachPaths(paths), String::new(), Vec::new()));
+                    }
                     "picture" => mailcraft_ui_egui::Picked::Picture,
                     "backup" => mailcraft_ui_egui::Picked::Backup,
                     "rules" => mailcraft_ui_egui::Picked::Rules,

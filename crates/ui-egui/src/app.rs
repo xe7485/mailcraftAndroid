@@ -292,9 +292,13 @@ impl MailApp {
                 self.session.notice(tf!("The sign-in page couldn't be opened: {error}", error = e), true);
             }
         }
-        // Files chosen in the browser's picker.
+        // Files chosen in a platform picker. Android stages attachment paths instead of reading
+        // them into memory, so attach those together after the other picker results are handled.
+        let mut attachment_paths = Vec::new();
         for (purpose, name, data) in self.services.take_picked() {
             match purpose {
+                Picked::AttachPath => attachment_paths.push(name),
+                Picked::AttachPaths(paths) => attachment_paths.extend(paths),
                 Picked::Certificate(account) => {
                     self.ui.dialog = Some(Dialog::Certificate { account, path: name, data: Some(data), password: String::new() });
                 }
@@ -322,6 +326,12 @@ impl MailApp {
                     let handed = self.session.hand(data);
                     self.run("compose.attach", json!({"name": name, "handed": handed}));
                 }
+            }
+        }
+        if !attachment_paths.is_empty() {
+            for path in &attachment_paths {
+                self.run("compose.attach", json!({"path": path}));
+                self.services.discard_picked_file(std::path::Path::new(path));
             }
         }
         // Snoozed mail that is due comes back.

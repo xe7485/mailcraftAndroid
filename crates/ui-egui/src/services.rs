@@ -118,6 +118,10 @@ pub struct Work {
 pub enum Picked {
     /// Attached to the message being written.
     Attach,
+    /// A private file staged by a native picker, attached after all picked files arrive.
+    AttachPath,
+    /// Several private files staged together by a native multi-select picker.
+    AttachPaths(Vec<String>),
     /// Put in the message being written, at its cursor.
     Picture,
     /// A backup to bring back (issue #83).
