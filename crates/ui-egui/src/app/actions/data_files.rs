@@ -4,6 +4,9 @@ use crate::*;
 
 impl MailApp {
     pub(super) fn pick_account_data_file(&mut self) {
+        if self.services.pick_later(&Picked::AccountDataFile) {
+            return;
+        }
         if let Some(path) = self.services.pick_data_file()
             && let Some(dialogs::Dialog::AddAccount(f)) = self.ui.dialog.as_mut()
         {
@@ -20,6 +23,9 @@ impl MailApp {
     }
 
     pub(super) fn open_data_file(&mut self) {
+        if self.services.pick_later(&Picked::DataFile) {
+            return;
+        }
         if let Some(path) = self.services.pick_data_file() {
             let path = path.to_string_lossy().trim().to_string();
             match self.session.run("account.inspectDataFile", &json!({"path": path, "again": true})) {

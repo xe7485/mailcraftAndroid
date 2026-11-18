@@ -96,7 +96,10 @@ impl MailApp {
         let path = std::path::Path::new(what);
         let extension = path.extension().and_then(std::ffi::OsStr::to_str).unwrap_or_default().to_ascii_lowercase();
         let data_file = matches!(extension.as_str(), "pst" | "mailcraft");
-        let message_file = matches!(extension.as_str(), "eml" | "msg");
+        let outlook_message_file = extension == "msg";
+        if outlook_message_file {
+            self.services.track_picked_file(path);
+        }
         if data_file {
             self.services.track_picked_file(path);
             let path = path.to_string_lossy().trim().to_string();
@@ -110,7 +113,7 @@ impl MailApp {
         } else {
             self.open_handed(what);
         }
-        if !message_file && !data_file {
+        if !data_file && !outlook_message_file {
             self.services.discard_picked_file(path);
         }
     }

@@ -91,7 +91,7 @@ impl AndroidServices {
                 worker_repaint.request_repaint();
                 return;
             }
-            let staged_file = matches!(worker_purpose.as_str(), "data-file" | "account-data-file" | "attach");
+            let staged_file = matches!(worker_purpose.as_str(), "data-file" | "open-file" | "account-data-file" | "attach");
             let purpose_for_ui = if worker_purpose == "attach" {
                 if is_batch { "attach-path-batch" } else { "attach-path" }.to_owned()
             } else {
@@ -454,6 +454,8 @@ impl Services for AndroidServices {
             mailcraft_ui_egui::Picked::Rules => "rules".to_string(),
             mailcraft_ui_egui::Picked::Categories => "categories".to_string(),
             mailcraft_ui_egui::Picked::Certificate(account) => format!("certificate:{account}"),
+            mailcraft_ui_egui::Picked::DataFile => "open-file".to_string(),
+            mailcraft_ui_egui::Picked::AccountDataFile => "account-data-file".to_string(),
         };
         let pending_picker_purpose = self.pending_picker_purpose.clone();
         {
@@ -496,11 +498,8 @@ impl Services for AndroidServices {
             if !shared_batch_open {
                 clear_picker_purpose(&self.pending_picker_purpose, purpose);
             }
-            let is_data_archive = std::path::Path::new(name)
-                .extension()
-                .and_then(std::ffi::OsStr::to_str)
-                .is_some_and(|extension| matches!(extension.to_ascii_lowercase().as_str(), "pst" | "mailcraft"));
-            if purpose == "account-data-file" || (purpose == "data-file" && is_data_archive) {
+            let extension = std::path::Path::new(name).extension().and_then(std::ffi::OsStr::to_str).map(str::to_ascii_lowercase).unwrap_or_default();
+            if purpose == "account-data-file" || (purpose == "open-file" && matches!(extension.as_str(), "pst" | "mailcraft" | "msg")) {
                 self.track_picked_file(std::path::Path::new(name));
             }
         }
@@ -513,6 +512,8 @@ impl Services for AndroidServices {
                     "backup" => mailcraft_ui_egui::Picked::Backup,
                     "rules" => mailcraft_ui_egui::Picked::Rules,
                     "categories" => mailcraft_ui_egui::Picked::Categories,
+                    "open-file" => mailcraft_ui_egui::Picked::DataFile,
+                    "account-data-file" => mailcraft_ui_egui::Picked::AccountDataFile,
                     certificate if certificate.starts_with("certificate:") => {
                         mailcraft_ui_egui::Picked::Certificate(certificate["certificate:".len()..].to_string())
                     }
@@ -563,7 +564,7 @@ impl Services for AndroidServices {
             Ok(limit) => limit,
             Err(error) => reject_shared_batch!(error),
         };
-        let data_file = matches!(purpose.as_str(), "data-file" | "account-data-file");
+        let data_file = matches!(purpose.as_str(), "data-file" | "open-file" | "account-data-file");
         let staged_attachment = purpose == "attach";
         let (data, source_bytes) = if data_file || staged_attachment {
             let length = match std::fs::metadata(path) {

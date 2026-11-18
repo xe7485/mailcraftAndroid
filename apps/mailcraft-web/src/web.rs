@@ -389,6 +389,9 @@ impl Services for WebServices {
     fn pick_later(&mut self, purpose: &Picked) -> bool {
         let (picked, ctx, purpose) = (self.picked.clone(), self.ctx.clone(), purpose.clone());
         let dialog = match purpose {
+            // The browser has no filesystem path to pass to the PST import or message-file
+            // reader. Leave these requests to a future browser-specific, byte-based flow.
+            Picked::DataFile | Picked::AccountDataFile => return false,
             Picked::Backup => rfd::AsyncFileDialog::new().add_filter("MailCraft backup", &["mailcraft-backup"]),
             Picked::Rules | Picked::Categories => rfd::AsyncFileDialog::new().add_filter("MailCraft file", &["json"]),
             Picked::Picture => rfd::AsyncFileDialog::new().add_filter("Pictures", &["png", "jpg", "jpeg", "gif", "webp", "bmp"]),

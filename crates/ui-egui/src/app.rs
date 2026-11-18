@@ -298,6 +298,14 @@ impl MailApp {
                 Picked::Certificate(account) => {
                     self.ui.dialog = Some(Dialog::Certificate { account, path: name, data: Some(data), password: String::new() });
                 }
+                Picked::AccountDataFile => {
+                    if let Some(Dialog::AddAccount(form)) = self.ui.dialog.as_mut() {
+                        form.pst = name;
+                    } else {
+                        self.services.discard_picked_file(std::path::Path::new(&name));
+                    }
+                }
+                Picked::DataFile => self.open_handed_from_picker(&name),
                 Picked::Backup => self.backup_picked(name, data),
                 Picked::Rules => self.rules_picked(&data),
                 Picked::Categories => self.categories_picked(&data),

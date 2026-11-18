@@ -128,6 +128,10 @@ pub enum Picked {
     Categories,
     /// An account's certificate with its key (`.p12` / `.pfx`), by the account's id.
     Certificate(String),
+    /// A file to open in MailCraft.
+    DataFile,
+    /// A data file to use when adding an account.
+    AccountDataFile,
 }
 
 /// What becomes of the window when it's closed and MailCraft is kept running.

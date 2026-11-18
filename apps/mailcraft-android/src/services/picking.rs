@@ -19,7 +19,7 @@ pub(crate) fn picker_file_limit(purpose: &str, name: &str, mime_type: &str) -> R
     if purpose == "account-data-file" && !data_container {
         return Err(mailcraft_ui_egui::i18n::t("Choose a .pst or .mailcraft data file for this account").to_owned());
     }
-    Ok(if matches!(purpose, "data-file" | "account-data-file") {
+    Ok(if matches!(purpose, "data-file" | "open-file" | "account-data-file") {
         if data_container {
             mailcraft_engine::MAX_DATA_ARCHIVE_BYTES
         } else if pim_file {
@@ -85,7 +85,7 @@ pub(crate) fn read_picked_file(
     if content_authority.is_none_or(str::is_empty) || uri.chars().any(char::is_control) {
         return Err(picker_fallback());
     }
-    let data_file = matches!(purpose, "data-file" | "account-data-file");
+    let data_file = matches!(purpose, "data-file" | "open-file" | "account-data-file");
     let max_bytes = picker_file_limit(purpose, &name, &mime_type)?;
     if picked_size.is_some_and(|size| size > max_bytes) {
         return Err(selected_file_too_large(max_bytes));
