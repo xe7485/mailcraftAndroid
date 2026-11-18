@@ -90,19 +90,31 @@ impl MailApp {
 
     /// A picture into the signature being edited, at its cursor: pasted, or chosen from files.
     pub(crate) fn signature_picture(&mut self, paste: bool) {
-        use mailcraft_engine::mime::{InlinePicture, SIGNATURE_PICTURE_MAX, SIGNATURE_PICTURE_TYPES, SIGNATURE_PICTURES, mime_from_name};
+        use mailcraft_engine::mime::SIGNATURE_PICTURE_MAX;
         if !matches!(self.ui.dialog, Some(Dialog::Signature(_))) {
             return;
         }
         let pictures: Vec<(String, Vec<u8>)> = if paste {
             self.services.clipboard_picture().map(|png| ("pasted.png".to_string(), png)).into_iter().collect()
         } else {
+            if self.services.pick_later(&crate::Picked::SignaturePicture) {
+                return;
+            }
             let read = |p: &std::path::PathBuf| {
                 let v = read_capped(p, SIGNATURE_PICTURE_MAX as u64 + 1).ok()?;
                 Some((p.file_name()?.to_string_lossy().to_string(), v))
             };
             self.services.pick_pictures().iter().filter_map(read).collect()
         };
+        self.add_signature_pictures(pictures);
+    }
+
+    pub(crate) fn signature_picture_picked(&mut self, name: String, data: Vec<u8>) {
+        self.add_signature_pictures(vec![(name, data)]);
+    }
+
+    fn add_signature_pictures(&mut self, pictures: Vec<(String, Vec<u8>)>) {
+        use mailcraft_engine::mime::{InlinePicture, SIGNATURE_PICTURE_MAX, SIGNATURE_PICTURE_TYPES, SIGNATURE_PICTURES, mime_from_name};
         let Some(Dialog::Signature(f)) = self.ui.dialog.as_mut() else { return };
         for (name, data) in pictures {
             let mime = mime_from_name(&name);

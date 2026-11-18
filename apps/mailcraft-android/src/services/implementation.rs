@@ -469,6 +469,7 @@ impl Services for AndroidServices {
             mailcraft_ui_egui::Picked::AttachPath => "attach".to_string(),
             mailcraft_ui_egui::Picked::AttachPaths(_) => "attach".to_string(),
             mailcraft_ui_egui::Picked::SignatureFile => "signature".to_string(),
+            mailcraft_ui_egui::Picked::SignaturePicture => "signature-picture".to_string(),
             mailcraft_ui_egui::Picked::Picture => "picture".to_string(),
             mailcraft_ui_egui::Picked::Backup => "backup".to_string(),
             mailcraft_ui_egui::Picked::Rules => "rules".to_string(),
@@ -549,6 +550,7 @@ impl Services for AndroidServices {
                         return Some((mailcraft_ui_egui::Picked::AttachPaths(paths), String::new(), Vec::new()));
                     }
                     "picture" => mailcraft_ui_egui::Picked::Picture,
+                    "signature-picture" => mailcraft_ui_egui::Picked::SignaturePicture,
                     "signature" => mailcraft_ui_egui::Picked::SignatureFile,
                     "backup" => mailcraft_ui_egui::Picked::Backup,
                     "rules" => mailcraft_ui_egui::Picked::Rules,

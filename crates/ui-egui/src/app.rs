@@ -300,6 +300,7 @@ impl MailApp {
                 Picked::AttachPath => attachment_paths.push(name),
                 Picked::AttachPaths(paths) => attachment_paths.extend(paths),
                 Picked::SignatureFile => self.signature_file_picked(&name, &data, None),
+                Picked::SignaturePicture => self.signature_picture_picked(name, data),
                 Picked::Certificate(account) => {
                     self.ui.dialog = Some(Dialog::Certificate { account, path: name, data: Some(data), password: String::new() });
                 }

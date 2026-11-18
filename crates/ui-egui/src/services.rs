@@ -124,6 +124,8 @@ pub enum Picked {
     AttachPaths(Vec<String>),
     /// HTML code to put in the signature being edited.
     SignatureFile,
+    /// An image to put in the signature being edited.
+    SignaturePicture,
     /// Put in the message being written, at its cursor.
     Picture,
     /// A backup to bring back (issue #83).
